@@ -1,0 +1,34 @@
+{
+  "summary": "Urbanex Realty full-stack review: 25/25 backend pytest tests PASS, all UI flows verified via Playwright. Public content, 12 seeded properties, 19 zones, live YouTube (12 videos from @urbanexbyayandey), public lead capture, admin gating (401 without token, 200 with Bearer/cookie), lead status update + notes, CSV export, semantic search fallback, reports overview, invoice creation (URBX-YYYY-NNNN), and /auth/me all work. Frontend home hero, marquee, testimonials (heading 'Trusted by buyers, sellers and Burdwan-returning NRIs.'), video showcase, properties grid with blurred prices + login-modal gate, zone filter (radix combobox), property detail, About 'Since 2022', Contact form submit + toast, Construction 5-stage timeline + estimate form, Terms/Privacy, floating WhatsApp, admin CRM (leads table, recharts on reports, invoice creation showing URBX-2026-0002) — all verified working. Admin gate correctly redirects unauthenticated users to /.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_urbanex_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py exposes /admin/leads/transcribe which imports emergentintegrations.llm.openai.whisper inside handler. If the module path is wrong the function silently returns '[Transcription unavailable: ...]' — verify path once real audio testing is required (skipped per request).",
+    "/api/auth/me returns 401 while logged-out; frontend polls it on every public page and logs console errors. Consider suppressing the console error at the fetch layer (treat 401 as normal 'unauthenticated' state) to keep DevTools clean.",
+    "server.py `@app.on_event('startup')` and `@app.on_event('shutdown')` are deprecated in FastAPI (use lifespan). Not a bug, but tech-debt.",
+    "server.py `ensure_seed()` only runs if properties<12 and doesn't reseed if seed content changes. Fine for MVP; document behavior.",
+    "Admin routes at /admin correctly gate on user.is_admin; verify similar gating on any future admin sub-actions to avoid regressions."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_urbanex_api.py"
+  ],
+  "success_rate": {"backend": "100% (25/25)", "frontend": "100% (all critical flows verified)"},
+  "test_credentials": "Bearer/cookie session_token=adm_test_token_123 for user ayan@urbanex.com (is_admin=true). Seeded in db.user_sessions (expires 2026-07-22). Reseed script in /app/memory/test_credentials.md.",
+  "seed_data_creation": "Tests created a few TEST_-prefixed leads and 2 TEST_ invoices (URBX-2026-0001, URBX-2026-0002) in Mongo. No cleanup performed — safe to leave as they don't affect production seeds; admin can filter with 'TEST_' prefix.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend + frontend fully green. Whisper transcription (/api/admin/leads/{id}/transcribe) was intentionally skipped — needs real audio + mic permission. YouTube live-fetch works and returns 12 videos; if quota is hit, endpoint falls back to 3 hardcoded videos automatically. Radix Select filters use role='combobox'; click the trigger and then click role='option' — not native select. Property card has nested <a href='/properties/{id}'> (image area); clicking the 'See price' button opens the auth modal instead of navigating.",
+  "rca of the issue": "N/A — no bugs found."
+}

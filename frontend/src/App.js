@@ -1,53 +1,60 @@
-import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import PublicLayout from "@/components/layout/PublicLayout";
+import HomePage from "@/pages/HomePage";
+import PropertiesPage from "@/pages/PropertiesPage";
+import PropertyDetailPage from "@/pages/PropertyDetailPage";
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
+import ConstructionPage from "@/pages/ConstructionPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import AuthCallback from "@/pages/AuthCallback";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+import AdminLayout from "@/pages/admin/AdminLayout";
+import LeadsPage from "@/pages/admin/LeadsPage";
+import ReportsPage from "@/pages/admin/ReportsPage";
+import InvoicePage from "@/pages/admin/InvoicePage";
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+function AppRouter() {
+  const location = useLocation();
+  // Handle OAuth callback BEFORE any other routing
+  if (location.hash?.includes("session_id=")) return <AuthCallback/>;
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <Routes>
+      <Route element={<PublicLayout/>}>
+        <Route path="/" element={<HomePage/>}/>
+        <Route path="/properties" element={<PropertiesPage/>}/>
+        <Route path="/properties/:id" element={<PropertyDetailPage/>}/>
+        <Route path="/about" element={<AboutPage/>}/>
+        <Route path="/contact" element={<ContactPage/>}/>
+        <Route path="/construction" element={<ConstructionPage/>}/>
+        <Route path="/terms" element={<TermsPage/>}/>
+        <Route path="/privacy" element={<PrivacyPage/>}/>
+      </Route>
+
+      <Route path="/admin" element={<AdminLayout/>}>
+        <Route index element={<LeadsPage/>}/>
+        <Route path="leads" element={<LeadsPage/>}/>
+        <Route path="reports" element={<ReportsPage/>}/>
+        <Route path="invoices" element={<InvoicePage/>}/>
+      </Route>
+    </Routes>
   );
-};
+}
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <AuthProvider>
+          <AppRouter/>
+          <Toaster position="top-right" richColors theme="light"/>
+        </AuthProvider>
       </BrowserRouter>
     </div>
   );
