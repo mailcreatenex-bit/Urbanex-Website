@@ -22,7 +22,7 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-[#F8F9FA] grid grid-cols-1 lg:grid-cols-[260px_1fr]">
       <aside className="hidden lg:flex flex-col bg-urbanex-navy text-urbanex-ivory p-6">
         <button onClick={() => nav("/")} className="flex items-center gap-3 mb-10 group text-left">
-          <span className="w-9 h-9 rounded-full border border-urbanex-gold flex items-center justify-center text-urbanex-gold font-display text-xl">U</span>
+          <img src="/brand/urbanex-logo.png" alt="Urbanex" className="h-14 w-auto object-contain bg-white/5 rounded-lg p-1"/>
           <div>
             <div className="font-display text-lg">Urbanex CRM</div>
             <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">Ayan Dey</div>

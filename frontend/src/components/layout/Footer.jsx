@@ -6,11 +6,11 @@ export default function Footer() {
     <footer className="mt-24 bg-urbanex-navy text-urbanex-ivory">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-full border border-urbanex-gold flex items-center justify-center text-urbanex-gold font-display text-2xl">U</span>
+          <div className="flex items-center gap-4">
+            <img src="/brand/urbanex-logo.png" alt="Urbanex Realty" className="h-24 w-auto object-contain bg-white/5 rounded-2xl p-2 ring-1 ring-white/10"/>
             <div>
-              <div className="font-display text-2xl">Urbanex Realty</div>
-              <div className="text-xs tracking-[0.28em] uppercase text-urbanex-gold">Burdwan, West Bengal</div>
+              <div className="font-display text-3xl leading-tight">Urbanex Realty</div>
+              <div className="text-xs tracking-[0.28em] uppercase text-urbanex-gold mt-1">Burdwan, West Bengal</div>
             </div>
           </div>
           <p className="mt-6 text-urbanex-ivory/70 text-sm max-w-md leading-relaxed">

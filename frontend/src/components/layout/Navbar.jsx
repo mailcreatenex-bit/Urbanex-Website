@@ -19,13 +19,17 @@ export default function Navbar() {
   const nav = useNavigate();
 
   return (
-    <header className="sticky top-0 z-40 bg-urbanex-ivory/85 backdrop-blur-xl border-b border-urbanex-navy/10">
-      <div className="max-w-7xl mx-auto px-5 md:px-10 flex items-center justify-between h-20">
+    <header className="sticky top-0 z-40 bg-urbanex-ivory/90 backdrop-blur-xl border-b border-urbanex-navy/10">
+      <div className="max-w-7xl mx-auto px-5 md:px-10 flex items-center justify-between h-24 md:h-28">
         <Link to="/" data-testid={NAV.brand} className="flex items-center gap-3 group">
-          <span className="w-9 h-9 rounded-full border border-urbanex-gold flex items-center justify-center bg-urbanex-navy text-urbanex-gold font-display text-xl leading-none">U</span>
-          <div className="leading-tight">
-            <div className="font-display text-xl text-urbanex-navy tracking-tight">Urbanex</div>
-            <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold font-medium">Realty · Burdwan</div>
+          <img
+            src="/brand/urbanex-logo.png"
+            alt="Urbanex Realty"
+            className="h-16 md:h-20 lg:h-24 w-auto object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+          <div className="hidden sm:block leading-tight border-l border-urbanex-navy/15 pl-3">
+            <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold font-semibold">Since 2022</div>
+            <div className="text-xs text-urbanex-navy/60">Burdwan · West Bengal</div>
           </div>
         </Link>
 
