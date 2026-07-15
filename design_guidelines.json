@@ -1,0 +1,178 @@
+{
+  "theme_name": "Urbanex Light-Luxury",
+  "project": "Urbanex Realty Marketing Site & CRM Dashboard",
+  "founder": "Ayan Dey",
+  "location": "Burdwan, West Bengal, India",
+  "typography": {
+    "heading": {
+      "family": "Cormorant Garamond, serif",
+      "weights": [400, 500, 600, 700],
+      "usage": "Used for all majestic, large-scale headings (H1-H3). Capitalize or lowercase playfully, but maintain tight tracking. Reflects old-money luxury, authority, and elegance."
+    },
+    "body": {
+      "family": "Outfit, sans-serif",
+      "weights": [300, 400, 500],
+      "usage": "Used for all paragraphs, UI text, small labels, and data tables in the CRM. Extremely clean, geometric but highly readable."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "weights": [400],
+      "usage": "Used strictly in the Admin/CRM for invoice IDs, data points, or CSV export logs."
+    },
+    "hierarchy": {
+      "h1": "text-5xl md:text-6xl+ tracking-tighter leading-none font-medium",
+      "h2": "text-4xl md:text-5xl tracking-tight leading-tight font-medium",
+      "h3": "text-2xl md:text-3xl tracking-normal leading-snug",
+      "h4": "text-lg md:text-xl font-body font-medium",
+      "body": "text-base leading-relaxed text-urbanex-navy/80",
+      "overline": "text-xs tracking-[0.2em] uppercase font-body font-semibold text-urbanex-gold"
+    }
+  },
+  "colors": {
+    "background": {
+      "marketing_primary": "#FDFBF7",
+      "marketing_secondary": "#F4F1EA",
+      "admin_primary": "#F8F9FA",
+      "admin_sidebar": "#0A1225"
+    },
+    "primary": {
+      "navy": "#0A1225",
+      "navy_light": "#1A253F",
+      "description": "Deep authoritative navy blue. Use for primary text, large heading text, and footer background."
+    },
+    "accent": {
+      "gold": "#C5A059",
+      "gold_hover": "#DBC084",
+      "gold_muted": "#E5D8B8",
+      "description": "Matte, sophisticated gold. No CSS gradients or slop. Use for primary buttons, active pipeline stages, and overlines."
+    },
+    "surface": {
+      "card": "#FFFFFF",
+      "glass": "bg-white/70 backdrop-blur-xl border border-white/40",
+      "dark_glass": "bg-urbanex-navy/80 backdrop-blur-2xl border border-white/10"
+    },
+    "status_pipeline": {
+      "new": "#3B82F6",
+      "contacted": "#8B5CF6",
+      "site_visit": "#F59E0B",
+      "negotiation": "#C5A059",
+      "closed": "#10B981",
+      "lost": "#EF4444"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "subtle": "shadow-[0_4px_20px_-4px_rgba(10,18,37,0.05)]",
+      "hover": "shadow-[0_12px_32px_-4px_rgba(10,18,37,0.1)]",
+      "glow": "shadow-[0_0_24px_rgba(197,160,89,0.3)]"
+    },
+    "borders": {
+      "subtle": "border-urbanex-navy/10",
+      "gold_accent": "border-urbanex-gold/30"
+    },
+    "radii": {
+      "card": "rounded-2xl",
+      "button": "rounded-full",
+      "input": "rounded-lg"
+    }
+  },
+  "grids_and_layouts": {
+    "marketing": {
+      "container": "max-w-7xl mx-auto px-6 md:px-12",
+      "property_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+      "bento_about": "grid grid-cols-1 md:grid-cols-12 gap-6 (use col-span-8 and col-span-4 for asymmetry)"
+    },
+    "admin": {
+      "layout": "grid grid-cols-1 lg:grid-cols-[260px_1fr] h-screen bg-admin-primary",
+      "content_area": "p-8 overflow-y-auto"
+    },
+    "spacing": "Generous (p-8 to p-16) in marketing for a luxurious, unhurried feel. Dense (p-4 to p-6) in CRM for data efficiency."
+  },
+  "motion": {
+    "scroll": "Smooth scrolling via Lenis. Highly recommended to give 'weight' to the luxury feel.",
+    "page_load": "Fade up and gentle 10px translate-y on hero text. 0.8s duration, ease-out.",
+    "hover_property": "Slow scale up on the image (scale-105) over 0.6s. Image container MUST have overflow-hidden.",
+    "marquee": "19-zone Burdwan locality marquee moving continuously. Use react-fast-marquee. Style: Pale background, dark earthy/navy text, font-body, wide gaps (gap-24)."
+  },
+  "components": {
+    "hero_marketing": {
+      "structure": "Full viewport height. Background is a scroll-triggered high-end real estate video (fallback to image). Overlay is bg-black/40 (never darker).",
+      "overlay_card": "A 'Looking For Properties' glassmorphism promo banner floating at the bottom right or center."
+    },
+    "property_card": {
+      "structure": "Image top (max-h-64 object-cover), Details bottom.",
+      "gated_price": "If not logged in, wrap the price text in a blur container `backdrop-blur-md bg-white/50`, showing a Lock icon and 'Sign in to see price'. Use absolute positioning over the price area."
+    },
+    "construction_timeline": {
+      "style": "Vertical line on the left (md:center) using urbanex-gold. Dots on the line. Cards offset alternately. Clean, trustworthy steps."
+    },
+    "video_modal": {
+      "style": "Fixed z-[100] inset-0 bg-urbanex-navy/95 backdrop-blur-sm. Centered iframe/video player. Large, elegant close button (X) top right."
+    },
+    "admin_pipeline": {
+      "kanban_style": "For leads. Columns with background white, subtle border. Cards inside have left-border colored based on status."
+    }
+  },
+  "media": {
+    "founder_portraits": [
+      {
+        "url": "https://images.unsplash.com/photo-1589386417686-0d34b5903d23",
+        "description": "Smiling man in black suit, use for About page founder section."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1659353220482-554773c2f7fa",
+        "description": "Man in suit arms crossed, use for Contact side card."
+      }
+    ],
+    "properties": [
+      {
+        "url": "https://images.pexels.com/photos/8134821/pexels-photo-8134821.jpeg",
+        "description": "Modern luxury house, use for Property card 1 or Hero."
+      },
+      {
+        "url": "https://images.pexels.com/photos/30211366/pexels-photo-30211366.jpeg",
+        "description": "Stylish white house exterior, use for Property card 2."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1559998852-f8ab898d889e",
+        "description": "Modern high rise, use for Property card 3."
+      },
+      {
+        "url": "https://images.pexels.com/photos/36392046/pexels-photo-36392046.jpeg",
+        "description": "Indian apartment complex, use for Property card 4."
+      }
+    ],
+    "construction": [
+      {
+        "url": "https://images.unsplash.com/photo-1527335988388-b40ee248d80c",
+        "description": "Construction crane and building frame. Use for Construction Service hero."
+      },
+      {
+        "url": "https://images.pexels.com/photos/13758319/pexels-photo-13758319.jpeg",
+        "description": "Modern urban construction site. Use for Construction timeline section."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install and setup required fonts: Cormorant Garamond and Outfit via Google Fonts.",
+    "Initialize Tailwind config with the custom colors: urbanex-navy (#0A1225), urbanex-gold (#C5A059), urbanex-ivory (#FDFBF7).",
+    "Build a robust layout structure managing both the public Marketing routes and the protected Admin routes.",
+    "Implement the gated property price mechanism logic using emergent Google Auth (mock auth if no real backend is present, but show the UX).",
+    "Admin CRM: Use Recharts for the reports and implement jsPDF for invoice generation.",
+    "Add 'Cre8nex' credit discreetly in the marketing footer.",
+    "Implement the 19-zone marquee using react-fast-marquee or CSS animations. Localities like: Kalibazar, Renaissance Township, Borehat, Goda, Nawabhat, etc.",
+    "Add a fixed Floating WhatsApp button in the bottom-right corner of the marketing pages.",
+    "Write tests and add data-testid attributes to all interactive elements."
+  ],
+  "accessibility": {
+    "contrast": "Ensure gold text on white has sufficient contrast, if not, darken to gold_hover (#DBC084) or use navy for text and gold for accents.",
+    "motion": "Respect prefers-reduced-motion for all scroll animations."
+  },
+  "universal_guidelines": [
+    "You MUST NOT apply universal transition (transition: all). Use specific transitions.",
+    "Never use AI emoji characters for icons. Use lucide-react or phosphor-icons.",
+    "Use glass-morphism carefully; ensure legible text overlays by adding an explicit background to the glass panel or a text-shadow.",
+    "Do not center align all text; rely on left alignment for readability unless in specific hero or call-to-action blocks.",
+    "Avoid default purple gradients. Adhere strictly to the Ivory/Navy/Gold palette."
+  ]
+}
