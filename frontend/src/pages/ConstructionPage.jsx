@@ -8,7 +8,8 @@ import { checkPhone, apiError } from "@/lib/phone";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight, HardHat } from "lucide-react";
+import BuildScroll from "@/components/construction/BuildScroll";
 
 export default function ConstructionPage() {
   const ref = useRef(null);
@@ -43,30 +44,54 @@ export default function ConstructionPage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section ref={ref} data-testid={CONSTR.hero} className="relative h-[80vh] overflow-hidden bg-urbanex-navy">
+      {/* Hero: the gate of the site */}
+      <section ref={ref} data-testid={CONSTR.hero} className="relative h-[88vh] overflow-hidden bg-urbanex-navy">
         <motion.div style={{ scale }} className="absolute inset-0">
-          <video autoPlay loop muted playsInline poster="https://images.unsplash.com/photo-1527335988388-b40ee248d80c?w=2400" className="w-full h-full object-cover opacity-60">
+          <video autoPlay loop muted playsInline poster="https://images.unsplash.com/photo-1527335988388-b40ee248d80c?w=2400" className="w-full h-full object-cover opacity-55">
             <source src={CONSTR_VIDEO} type="video/mp4"/>
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-urbanex-navy/60 via-transparent to-urbanex-navy"/>
+          <div className="absolute inset-0 bg-gradient-to-b from-urbanex-navy/70 via-transparent to-urbanex-navy"/>
         </motion.div>
-        <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col justify-end pb-16">
-          <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-4">Contract construction</div>
+        <div className="absolute inset-0 blueprint opacity-30 mix-blend-screen pointer-events-none"/>
+
+        {/* tower crane, swinging a load */}
+        <svg viewBox="0 0 300 300" aria-hidden="true" className="hidden md:block absolute right-6 top-20 w-[300px] opacity-90 pointer-events-none">
+          <rect x="250" y="20" width="9" height="280" fill="#d9a63a"/>
+          {Array.from({ length: 9 }).map((_, i) => <path key={i} d={`M250 ${30 + i * 30} L259 ${55 + i * 30} M259 ${30 + i * 30} L250 ${55 + i * 30}`} stroke="#d9a63a" strokeWidth="1.5"/>)}
+          <rect x="40" y="16" width="240" height="9" fill="#d9a63a"/>
+          <circle cx="254" cy="10" r="4" fill="#ff5a4d" className="beacon"/>
+          <g className="crane-hook"><line x1="230" y1="25" x2="230" y2="90" stroke="#cbd2de" strokeWidth="1.5"/>
+            <g className="crane-load"><rect x="214" y="90" width="32" height="14" fill="#e2573f"/><rect x="214" y="104" width="32" height="14" fill="#7d8597"/></g></g>
+        </svg>
+
+        <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col justify-end pb-24">
+          <div className="inline-flex items-center gap-2 self-start bg-urbanex-gold text-urbanex-navy text-xs tracking-[0.24em] uppercase font-semibold px-3 py-1.5 rounded-sm mb-5">
+            <HardHat className="w-4 h-4"/> Hard hat area · You are welcome
+          </div>
           <h1 className="font-display text-5xl md:text-7xl text-urbanex-ivory leading-[0.98] tracking-tight max-w-4xl text-balance">
-            Your plot. Our crew. <em className="italic text-urbanex-gold">One handshake.</em>
+            Walk onto your site <em className="italic text-urbanex-gold">before it exists.</em>
           </h1>
           <p className="mt-5 max-w-2xl text-urbanex-ivory/80 text-lg leading-relaxed">
-            Turnkey home construction in Burdwan — from architectural design and municipal approvals to move-in day, backed by a 12-month written warranty.
+            Turnkey home construction in Burdwan, from design and approvals to move-in day, with a 12-month written warranty. Scroll down and watch a house go up, stage by stage.
           </p>
+          <div className="mt-8 flex flex-wrap gap-6 text-urbanex-ivory/90 text-sm font-mono">
+            {[["Since", "2022"], ["Written milestones", "5"], ["Free estimate in", "7 days"], ["Warranty", "12 months"]].map(([k, v]) => (
+              <div key={k} className="border-l-2 border-urbanex-gold pl-3"><div className="text-[10px] tracking-[0.2em] uppercase text-urbanex-gold">{k}</div><div className="text-xl">{v}</div></div>
+            ))}
+          </div>
         </div>
+        <div className="absolute bottom-0 inset-x-0 h-4 hazard hazard-move" style={{ backgroundSize: "64px 100%" }} aria-hidden="true"/>
       </section>
 
-      {/* Highlights */}
+      {/* The house builds itself as you scroll */}
+      <BuildScroll/>
+      <div className="h-3 hazard" aria-hidden="true"/>
+
+      {/* Site rules */}
       <section className="max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-4 gap-6">
         {CONSTRUCTION_HIGHLIGHTS.map((h, i) => (
           <motion.div key={h.title} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}
-            className="p-6 rounded-2xl bg-white border border-urbanex-navy/5 hover:border-urbanex-gold/40 transition-colors">
+            className="p-6 rounded-sm bg-white border-t-4 border-urbanex-gold shadow-[0_10px_30px_-20px_rgba(10,18,37,.3)] hover:-translate-y-1 transition-transform">
             <CheckCircle2 className="w-6 h-6 text-urbanex-gold"/>
             <div className="mt-4 font-display text-xl text-urbanex-navy">{h.title}</div>
             <div className="mt-2 text-sm text-urbanex-navy/70 leading-relaxed">{h.body}</div>
@@ -74,27 +99,25 @@ export default function ConstructionPage() {
         ))}
       </section>
 
-      {/* Timeline */}
+      {/* Sample weekly site report */}
       <section className="max-w-5xl mx-auto px-6 md:px-12 py-16">
-        <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-4">Our process</div>
-        <h2 className="font-display text-4xl md:text-5xl text-urbanex-navy leading-tight tracking-tight max-w-2xl text-balance">
-          Five stages. Zero surprises. Written milestones.
-        </h2>
-
-        <div className="mt-14 relative">
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-urbanex-gold/40 md:-translate-x-px"/>
-          {CONSTRUCTION_STEPS.map((s, i) => (
-            <motion.div key={s.title}
-              initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.05 }}
-              className={`relative pl-12 md:pl-0 md:grid md:grid-cols-2 md:gap-16 pb-16`}>
-              <div className={`absolute left-2 md:left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-urbanex-gold ring-4 ring-urbanex-ivory`}/>
-              <div className={i % 2 === 0 ? "md:text-right md:pr-8" : "md:col-start-2 md:pl-8"}>
-                <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold">Stage {String(i + 1).padStart(2, "0")}</div>
-                <div className="mt-2 font-display text-3xl text-urbanex-navy leading-tight">{s.title}</div>
-                <p className="mt-3 text-urbanex-navy/70 leading-relaxed">{s.body}</p>
-              </div>
-            </motion.div>
-          ))}
+        <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-4">Nothing hidden</div>
+        <h2 className="font-display text-4xl md:text-5xl text-urbanex-navy leading-tight tracking-tight max-w-2xl text-balance">The site diary you receive every week.</h2>
+        <div className="mt-10 grid md:grid-cols-5 gap-6 items-start">
+          <div className="md:col-span-3 relative bg-[#fffdf2] border border-urbanex-navy/10 rounded-sm shadow-[0_18px_40px_-24px_rgba(10,18,37,.35)] p-6 font-mono text-sm text-urbanex-navy -rotate-[0.6deg]">
+            <div className="absolute -top-3 left-8 w-16 h-6 bg-urbanex-gold/70 rotate-[-4deg]" aria-hidden="true"/>
+            <div className="flex justify-between text-[11px] tracking-[0.2em] uppercase text-urbanex-navy/50"><span>Weekly site report</span><span>Sample format</span></div>
+            <div className="mt-4 divide-y divide-dashed divide-urbanex-navy/20">
+              {[["Cement received", "bags, with bill photo"], ["Steel received", "kg, with weighment slip"], ["Crew on site", "masons, helpers, trade leads"], ["Work completed", "what was poured, laid or fixed"], ["Next week", "what is planned and what we need from you"]].map(([k, v]) => (
+                <div key={k} className="py-2.5 flex justify-between gap-4"><span className="font-semibold">{k}</span><span className="text-urbanex-navy/55 text-right">{v}</span></div>
+              ))}
+            </div>
+            <div className="mt-4 text-[11px] text-urbanex-navy/45">Sent to your WhatsApp every week with photos, so you can follow your build from anywhere.</div>
+          </div>
+          <div className="md:col-span-2 space-y-4 text-urbanex-navy/75 leading-relaxed">
+            <p>Living abroad or just busy? You see what a visitor would see: material in, work done, what is next.</p>
+            <p>Before each stage ends we walk you through it, on site or on video, and we only start the next stage after your sign-off.</p>
+          </div>
         </div>
       </section>
 

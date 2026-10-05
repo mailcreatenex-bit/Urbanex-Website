@@ -134,3 +134,16 @@
   .tilt, .tilt-depth, .hero-layer { transform: none !important; }
   .floaty, .page-in { animation: none; }
 }
+
+/* ===== Construction site theme (pure CSS, no images) ===== */
+.hazard { background: repeating-linear-gradient(-45deg, #C5A059 0 16px, #0A1225 16px 32px); }
+.blueprint { background-color: #0A1225; background-image: linear-gradient(rgba(197,160,89,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(197,160,89,.13) 1px, transparent 1px), linear-gradient(rgba(197,160,89,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(197,160,89,.06) 1px, transparent 1px); background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px; }
+@keyframes crane-hook { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-90px); } }
+@keyframes crane-load { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(26px); } }
+@keyframes beacon { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes tape-slide { to { background-position: 64px 0; } }
+.crane-hook { animation: crane-hook 9s ease-in-out infinite; }
+.crane-load { animation: crane-load 9s ease-in-out infinite; }
+.beacon { animation: beacon 1.2s ease-in-out infinite; }
+.hazard-move { animation: tape-slide 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .crane-hook, .crane-load, .beacon, .hazard-move { animation: none; } }
