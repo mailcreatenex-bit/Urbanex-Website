@@ -12,7 +12,7 @@ function Cre8nexMark() {
       className="inline-flex items-center opacity-90 hover:opacity-100 transition-opacity">
       {missing
         ? <span className="font-mono tracking-widest text-urbanex-gold hover:text-urbanex-goldHover">CRE8NEX</span>
-        : <img src="/brand/cre8nex-logo.png" alt="Cre8nex" height="28" loading="lazy" decoding="async" onError={() => setMissing(true)} className="h-7 w-auto object-contain"/>}
+        : <img src="/brand/cre8nex-logo.png" alt="Cre8nex" height="36" loading="lazy" decoding="async" onError={() => setMissing(true)} className="h-9 w-auto object-contain"/>}
     </a>
   );
 }
