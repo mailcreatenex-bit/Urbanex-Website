@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { assetUrl, shareUrl } from "@/lib/config";
 import { useI18n } from "@/context/I18nContext";
 import { useSeo } from "@/lib/seo";
+import VideoCard from "@/components/videos/VideoCard";
 
 // Plain-text body: blank line = paragraph, "## " = heading, lines starting "- " = bullet list.
 // Rendered as React elements (never as HTML), so post content cannot inject markup.
@@ -46,6 +47,21 @@ export default function BlogPostPage() {
       <div className="mt-4 text-sm text-urbanex-navy/50">{post.author} · {(post.created_at || "").slice(0, 10)}</div>
       {post.cover && <img src={assetUrl(post.cover)} alt="" className="mt-8 rounded-2xl w-full aspect-video object-cover"/>}
       <div className="mt-8"><Body text={post.body}/></div>
+      {post.videos?.length > 0 && (
+        <section className="mt-14" data-testid="post-videos">
+          <h2 className="font-display text-3xl text-urbanex-navy mb-6">{t("blog.videosTitle")}</h2>
+          <div className="grid sm:grid-cols-2 gap-6">{post.videos.map(v => <VideoCard key={v.video_id} video={v}/>)}</div>
+        </section>
+      )}
+      {post.sources?.length > 0 && (
+        <section className="mt-12" data-testid="post-sources">
+          <h2 className="text-xs tracking-[0.28em] uppercase text-urbanex-gold mb-3">{t("blog.sources")}</h2>
+          <ul className="space-y-1.5 text-sm">
+            {post.sources.filter(s => /^https?:\/\//.test(s.url)).map((s, i) => <li key={i}><a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="text-urbanex-navy/70 underline hover:text-urbanex-gold">{s.title}</a></li>)}
+          </ul>
+        </section>
+      )}
+      {post.generated && <p className="mt-10 text-xs text-urbanex-navy/50 border-l-2 border-urbanex-gold/50 pl-4">{t("blog.aiNote")}</p>}
       <a href={`https://wa.me/?text=${encodeURIComponent(`${post.title}\n${shareUrl("blog", post.slug)}`)}`} target="_blank" rel="noreferrer"
         className="mt-10 inline-block text-sm border border-urbanex-navy/15 hover:border-urbanex-gold rounded-full px-5 py-2">{t("share.whatsapp")}</a>
     </article>

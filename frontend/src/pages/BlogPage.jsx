@@ -21,7 +21,7 @@ export default function BlogPage() {
           <Link key={p.id} to={`/blog/${p.slug}`} className="group bg-white rounded-2xl overflow-hidden border border-urbanex-navy/5 hover:border-urbanex-gold/40 transition-colors">
             {p.cover && <img src={assetUrl(p.cover)} alt="" loading="lazy" className="w-full aspect-video object-cover"/>}
             <div className="p-6">
-              <div className="text-[10px] tracking-[0.24em] uppercase text-urbanex-gold">{p.category.replace("-", " ")}</div>
+              <div className="flex items-center gap-2 text-[10px] tracking-[0.24em] uppercase text-urbanex-gold">{p.category.replace("-", " ")}{p.generated && <span className="tracking-normal normal-case text-urbanex-navy/50 border border-urbanex-navy/15 rounded-full px-2 py-0.5">{t("blog.ai")}</span>}</div>
               <h2 className="mt-2 font-display text-2xl text-urbanex-navy group-hover:text-urbanex-gold transition-colors">{p.title}</h2>
               <p className="mt-2 text-sm text-urbanex-navy/65 line-clamp-3">{p.excerpt}</p>
               <div className="mt-4 text-xs text-urbanex-navy/40">{(p.created_at || "").slice(0, 10)}</div>

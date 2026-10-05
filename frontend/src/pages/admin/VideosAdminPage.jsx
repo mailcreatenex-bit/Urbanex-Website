@@ -14,6 +14,7 @@ export default function VideosAdminPage() {
   const [zones, setZones] = useState([]);
   const [form, setForm] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
 
   const load = useCallback(() => api.get("/admin/videos").then(r => setData(r.data)).catch(() => {}), []);
   useEffect(() => { load(); api.get("/config/public").then(r => setZones(r.data.zones || [])).catch(() => {}); }, [load]);
@@ -25,6 +26,15 @@ export default function VideosAdminPage() {
       if (r.ok) toast.success(`Synced: ${r.new} new, ${r.updated} updated, ${r.total} on the site`);
       else toast.error(r.error || "Sync failed");
     } catch { toast.error("Sync failed"); } finally { setSyncing(false); load(); }
+  };
+
+  const analyse = async () => {
+    setAnalysing(true);
+    try {
+      const { data: r } = await api.post("/admin/videos/enrich");
+      if (r.ok) toast.success(`AI read ${r.done} video description(s)${r.remaining ? `, ${r.remaining} more waiting` : ""}`);
+      else toast.error(r.error || "AI analysis failed");
+    } catch { toast.error("AI analysis failed"); } finally { setAnalysing(false); load(); }
   };
 
   const save = async (e) => {
@@ -60,6 +70,19 @@ export default function VideosAdminPage() {
       <p className="text-xs text-gray-500 mb-5">New uploads are picked up automatically about every {sy.every_minutes || 10} minutes. Last sync: {when(sy.last_run_at)} · full check: {when(sy.last_full_at)}.
         Details (location, type, bedrooms, area, price) are read from the video title/description; correct them here and your edits are kept.
         Anything written in a YouTube title or description is public on YouTube itself, so keep prices out of it and set them here.</p>
+
+      <div className={`mb-5 rounded-xl border p-4 text-sm flex flex-wrap items-center gap-3 ${data.ai?.enabled ? "bg-white" : "bg-amber-50 border-amber-200"}`} data-testid="ai-panel">
+        <div className="flex-1 min-w-[240px]">
+          <div className="font-medium">AI search ({data.ai?.enabled ? data.ai.model : "off"})</div>
+          <div className="text-xs text-gray-500">
+            {data.ai?.enabled
+              ? `Gemini has read ${data.ai.analysed} video description(s). It fills in missing details (BHK, area, location, features) and understands searches like “3bhk with parking” or in Bengali.`
+              : "Add GEMINI_API_KEY (from Google AI Studio) to the backend .env. Until then search still understands BHK, type, location and any word from the descriptions."}
+          </div>
+          {data.ai?.last_error && <div className="text-xs text-red-600 mt-1">Last AI error: {data.ai.last_error}</div>}
+        </div>
+        {data.ai?.enabled && <button onClick={analyse} disabled={analysing} data-testid="ai-run" className="border px-5 py-2 rounded-full text-sm hover:border-urbanex-gold disabled:opacity-50">{analysing ? "Reading…" : "Read descriptions now"}</button>}
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 text-sm">
         {[["On the site", sy.channel_video_count ? `${data.counts.visible} of ${sy.channel_video_count} on YouTube` : data.counts.visible], ["Missing price", data.counts.missing_price], ["Missing location", data.counts.missing_zone], ["All synced", data.counts.total]].map(([k, v]) => (

@@ -19,6 +19,7 @@ export default function VideosPage() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [understood, setUnderstood] = useState(null);
   const [loading, setLoading] = useState(true);
   useSeo({ title: "Property video tours in Burdwan", description: "Watch every Urbanex property video tour and filter by location, type, bedrooms and budget." });
 
@@ -36,8 +37,8 @@ export default function VideosPage() {
     setLoading(true);
     const h = setTimeout(() => {
       api.get("/video-listings", { params: params(1) })
-        .then(r => { if (!live) return; setItems(r.data.items); setPage(1); setPages(r.data.pages); setTotal(r.data.total); })
-        .catch(() => { if (live) { setItems([]); setTotal(0); } })
+        .then(r => { if (!live) return; setItems(r.data.items); setPage(1); setPages(r.data.pages); setTotal(r.data.total); setUnderstood(r.data.interpreted || null); })
+        .catch(() => { if (live) { setItems([]); setTotal(0); setUnderstood(null); } })
         .finally(() => { if (live) setLoading(false); });
     }, 250);
     return () => { live = false; clearTimeout(h); };
@@ -89,6 +90,17 @@ export default function VideosPage() {
           <span className="ml-auto text-xs text-urbanex-navy/50 font-mono" data-testid="video-total">{t("videos.results", { n: total })}</span>
         </div>
       </div>
+
+      {f.q.trim() && understood && (
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-urbanex-navy/70" data-testid="video-understood">
+          <span>{understood.source === "ai" ? t("videos.aiUnderstood") : t("videos.understood")}</span>
+          {understood.bedrooms != null && <span className="bg-urbanex-gold/15 rounded-full px-3 py-1">{understood.bedrooms} BHK</span>}
+          {understood.property_type && <span className="bg-urbanex-gold/15 rounded-full px-3 py-1">{t(`type.${understood.property_type}`)}</span>}
+          {understood.zone && <span className="bg-urbanex-gold/15 rounded-full px-3 py-1">{understood.zone}</span>}
+          {understood.budget && <span className="bg-urbanex-gold/15 rounded-full px-3 py-1">{t(`quiz.a.${understood.budget}`)}</span>}
+          {(understood.keywords || []).map(k => <span key={k} className="bg-urbanex-navy/5 rounded-full px-3 py-1">{k}</span>)}
+        </div>
+      )}
 
       <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="video-grid">
         {items.map(v => <VideoCard key={v.video_id} video={v}/>)}

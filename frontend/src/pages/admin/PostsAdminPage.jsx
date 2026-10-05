@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,6 +12,20 @@ export default function PostsAdminPage() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [auto, setAuto] = useState(null);
+  const [gen, setGen] = useState("");
+  const loadAuto = useCallback(() => api.get("/admin/blog/settings").then(r => setAuto(r.data)).catch(() => {}), []);
+  useEffect(() => { loadAuto(); }, [loadAuto]);
+  const saveAuto = async (patch) => {
+    try { const { data } = await api.put("/admin/blog/settings", patch); setAuto(a => ({ ...a, ...data })); toast.success("Saved"); }
+    catch { toast.error("Could not save"); }
+  };
+  const generate = async (kind) => {
+    setGen(kind);
+    try { const { data } = await api.post("/admin/posts/generate", { kind }); toast.success(`${data.published ? "Published" : "Draft saved"}: ${data.title}`); }
+    catch (err) { toast.error(err?.response?.data?.detail || "Generation failed"); }
+    finally { setGen(""); load(); loadAuto(); }
+  };
   const load = useCallback(() => api.get("/admin/posts").then(r => setItems(r.data)).catch(() => {}), []);
   useEffect(() => { load(); }, [load]);
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -40,10 +54,27 @@ export default function PostsAdminPage() {
         <h1 className="font-display text-3xl text-urbanex-navy">Guides &amp; blog</h1>
         <button onClick={() => setForm({ ...BLANK })} className="inline-flex items-center gap-2 bg-urbanex-navy text-urbanex-ivory px-5 py-2.5 rounded-full text-sm"><Plus className="w-4 h-4"/> New article</button>
       </div>
+      {auto && (
+        <div className="mb-6 bg-white rounded-xl border p-4 text-sm space-y-3" data-testid="auto-blog">
+          <div className="font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-urbanex-gold"/> Automatic articles (Gemini)</div>
+          {!auto.ai_enabled && <div className="rounded-lg bg-amber-50 text-amber-800 text-xs p-2">GEMINI_API_KEY is not set in the backend .env, so nothing can be generated yet.</div>}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={auto.enabled} onChange={e => saveAuto({ enabled: e.target.checked })}/> Write a new article automatically</label>
+            <label className="flex items-center gap-2">every <input type="number" min="1" max="30" defaultValue={auto.every_days} onBlur={e => +e.target.value !== auto.every_days && saveAuto({ every_days: Math.min(30, Math.max(1, +e.target.value || 3)) })} className="w-16 border rounded px-2 py-1"/> days</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={auto.auto_publish} onChange={e => saveAuto({ auto_publish: e.target.checked })}/> Publish straight away (untick to review drafts first)</label>
+          </div>
+          <div className="text-xs text-gray-500">Last article: {auto.last_run_at ? new Date(auto.last_run_at).toLocaleString("en-IN") : "none yet"}.{auto.last_error && <span className="text-red-600"> Last error: {auto.last_error}</span>}</div>
+          <div className="flex flex-wrap gap-2">
+            {[["news", "Write a news article now"], ["video", "Write from my videos now"], ["guide", "Write a guide now"]].map(([k, l]) => (
+              <button key={k} disabled={!!gen || !auto.ai_enabled} onClick={() => generate(k)} data-testid={`gen-${k}`} className="border px-4 py-1.5 rounded-full hover:border-urbanex-gold disabled:opacity-50">{gen === k ? "Writing…" : l}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="bg-white rounded-xl border divide-y">
         {items.map(p => (
           <div key={p.id} className="p-4 flex items-center gap-4">
-            <div className="flex-1"><div className="font-medium">{p.title}</div><div className="text-xs text-gray-500">{p.category} · {p.published ? "published" : "draft"} · /blog/{p.slug}</div></div>
+            <div className="flex-1"><div className="font-medium">{p.title}</div><div className="text-xs text-gray-500">{p.category}{p.generated ? " · AI" : ""} · {p.published ? "published" : "draft"} · /blog/{p.slug}</div></div>
             <button onClick={() => setForm({ ...BLANK, ...p, cover: p.cover || "" })} aria-label="Edit" className="p-2 hover:text-urbanex-gold"><Pencil className="w-4 h-4"/></button>
             <button onClick={() => remove(p)} aria-label="Delete" className="p-2 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
           </div>
