@@ -6,7 +6,7 @@ import HeroSection from "@/components/home/HeroSection";
 import PromoBand from "@/components/home/PromoBand";
 import ZonesMarquee from "@/components/home/ZonesMarquee";
 import TestimonialsSlider from "@/components/home/TestimonialsSlider";
-import VideoShowcase from "@/components/home/VideoShowcase";
+import LatestVideos from "@/components/home/LatestVideos";
 import HomeCtas from "@/components/home/HomeCtas";
 import Tilt from "@/components/fx/Tilt";
 import PropertyCard from "@/components/properties/PropertyCard";
@@ -33,6 +33,7 @@ export default function HomePage() {
   return (
     <div>
       <HeroSection/>
+      <LatestVideos/>
       <PromoBand/>
 
       {/* Pillars */}
@@ -83,7 +84,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <VideoShowcase/>
       <TestimonialsSlider/>
 
       {/* Construction CTA */}

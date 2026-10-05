@@ -71,6 +71,7 @@ export const en = {
   "videos.newest": "Newest first", "videos.oldest": "Oldest first", "videos.results": "{n} videos", "videos.more": "Load more", "videos.none": "No videos match these filters.",
   "videos.play": "Play video", "videos.short": "Short", "videos.more.zone": "More in {zone}", "videos.back": "All videos", "videos.watchOnYouTube": "Watch on YouTube",
   "videos.browseAll": "Browse all videos", "nav.videos": "Videos",
+  "latest.eyebrow": "Fresh from our YouTube channel", "latest.title": "Our latest video tours",
 };
 
 export const bn = {
@@ -131,4 +132,5 @@ export const bn = {
   "videos.newest": "নতুন আগে", "videos.oldest": "পুরোনো আগে", "videos.results": "{n}টি ভিডিও", "videos.more": "আরও দেখুন", "videos.none": "এই ফিল্টারে কোনো ভিডিও মেলেনি।",
   "videos.play": "ভিডিও চালান", "videos.short": "শর্ট", "videos.more.zone": "{zone}-এর আরও", "videos.back": "সব ভিডিও", "videos.watchOnYouTube": "ইউটিউবে দেখুন",
   "videos.browseAll": "সব ভিডিও দেখুন", "nav.videos": "ভিডিও",
+  "latest.eyebrow": "আমাদের ইউটিউব চ্যানেল থেকে সদ্য", "latest.title": "আমাদের সর্বশেষ ভিডিও ট্যুর",
 };
