@@ -18,9 +18,9 @@ export default function PromoBand() {
         </motion.div>
         <div>
           <div className="font-display text-2xl md:text-3xl text-urbanex-navy leading-snug">
-            We already shortlisted <em className="italic text-urbanex-gold">twelve</em>. Your dream home is one of them.
+            Watch every home on our channel. <em className="italic text-urbanex-gold">Your dream home</em> is one of them.
           </div>
-          <div className="text-sm text-urbanex-navy/60 mt-1">Curated across 19 Burdwan zones — from Kalibazar to Renaissance Township.</div>
+          <div className="text-sm text-urbanex-navy/60 mt-1">Property video tours across Burdwan, updated as we upload.</div>
         </div>
         <Link to="/properties" className="inline-flex items-center gap-2 text-urbanex-navy hover:text-urbanex-gold text-sm tracking-wide group">
           See the list

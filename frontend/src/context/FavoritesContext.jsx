@@ -48,13 +48,16 @@ export function FavoritesProvider({ children }) {
     }
   }, [uid, t]);
 
+  // forget saved ids that no longer exist (a listing was removed), so the heart counter stays truthful
+  const prune = useCallback((gone) => setIds(cur => cur.filter(x => !gone.includes(x))), []);
+
   const toggleCompare = useCallback((id) => setCompare(cur => {
     if (cur.includes(id)) return cur.filter(x => x !== id);
     return cur.length >= MAX_COMPARE ? cur : [...cur, id];
   }), []);
 
   return (
-    <Ctx.Provider value={{ ids, has: (id) => ids.includes(id), toggle, compare, toggleCompare, clearCompare: () => setCompare([]) }}>
+    <Ctx.Provider value={{ ids, has: (id) => ids.includes(id), toggle, prune, compare, toggleCompare, clearCompare: () => setCompare([]) }}>
       {children}
     </Ctx.Provider>
   );

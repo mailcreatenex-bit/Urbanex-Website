@@ -1607,7 +1607,7 @@ async def my_watchlist(request: Request):
 async def merge_watchlist(payload: WatchIds, request: Request):
     """Merge ids saved in the browser (before sign-in) into the account's watchlist."""
     user = await require_user(request)
-    valid = await db.properties.distinct("id", {"id": {"$in": payload.ids}})
+    valid = set(await db.properties.distinct("id", {"id": {"$in": payload.ids}})) | set(await db.videos.distinct("video_id", {"video_id": {"$in": payload.ids}}))
     for pid in valid:
         await db.watchlist.update_one({"user_id": user["user_id"], "property_id": pid},
                                       {"$setOnInsert": {"created_at": now_utc().isoformat()}}, upsert=True)
@@ -1616,7 +1616,7 @@ async def merge_watchlist(payload: WatchIds, request: Request):
 @api.post("/me/watchlist/{pid}")
 async def watch_property(pid: str, request: Request):
     user = await require_user(request)
-    if not await db.properties.find_one({"id": pid}, {"_id": 1}):
+    if not await db.properties.find_one({"id": pid}, {"_id": 1}) and not await db.videos.find_one({"video_id": pid}, {"_id": 1}):
         raise HTTPException(404, "Property not found")
     if await db.watchlist.count_documents({"user_id": user["user_id"]}) >= 200:
         raise HTTPException(400, "Watchlist is full")
@@ -2975,8 +2975,12 @@ async def video_listings(request: Request, zone: Optional[str] = None, property_
                          status: Optional[Literal["available", "sold", "upcoming"]] = None,
                          q: Optional[str] = Query(None, max_length=100),
                          sort: Literal["newest", "oldest"] = "newest",
-                         page: int = Query(1, ge=1), limit: int = Query(12, ge=1, le=48)):
+                         ids: Optional[str] = Query(None, max_length=1500),      # comma-separated video ids (the visitor's shortlist)
+                         page: int = Query(1, ge=1), limit: int = Query(12, ge=1, le=100)):
     base = video_query(zone, property_type, min_bedrooms, budget, None, status)
+    if ids:
+        wanted = [i for i in dict.fromkeys(x.strip() for x in ids.split(",")) if re.fullmatch(r"[A-Za-z0-9_-]{6,20}", i)][:100]
+        base["video_id"] = {"$in": wanted}
     query, interpreted = base, None
     if q and q.strip():
         zones = sorted(set(BURDWAN_ZONES) | (set(await db.videos.distinct("zone")) - {None}))
