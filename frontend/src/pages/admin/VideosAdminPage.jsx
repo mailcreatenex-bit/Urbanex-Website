@@ -49,6 +49,14 @@ export default function VideosAdminPage() {
     await api.patch(`/admin/videos/${form.video_id}`, { reparse: true }).then(() => toast.success("Re-read from the YouTube text")).catch(() => toast.error("Failed"));
     setForm(null); load();
   };
+  // quick fix straight from the table: pick the right type or location and it is saved (and locked against the AI) at once
+  const quick = async (v, field, value) => {
+    try {
+      const { data: row } = await api.patch(`/admin/videos/${v.video_id}`, { [field]: value || null });
+      setData(d => ({ ...d, items: d.items.map(x => x.video_id === v.video_id ? { ...x, ...row } : x) }));
+      toast.success("Saved");
+    } catch { toast.error("Save failed"); }
+  };
   const toggleHidden = async (v) => { await api.patch(`/admin/videos/${v.video_id}`, { hidden: !v.hidden }).catch(() => toast.error("Failed")); load(); };
 
   const items = data.items.filter(v => filter === "all" ? !v.missing : filter === "needs" ? !v.missing && (!v.price_inr || !v.zone) : filter === "hidden" ? v.hidden : v.missing);
@@ -103,8 +111,16 @@ export default function VideosAdminPage() {
             {items.map(v => (
               <tr key={v.video_id} className={`border-b last:border-0 ${v.hidden ? "opacity-50" : ""}`}>
                 <td className="p-3"><div className="flex items-center gap-3"><img src={v.thumbnail} alt="" className="w-20 h-12 object-cover rounded"/><div className="max-w-[260px]"><div className="font-medium line-clamp-2">{v.title}</div><div className="text-xs text-gray-400">{(v.published_at || "").slice(0, 10)}{v.is_short ? " · short" : ""}{(v.locked_fields || []).length ? " · edited" : ""}</div></div></div></td>
-                <td className={v.zone ? "" : "text-amber-600"}>{v.zone || "missing"}</td>
-                <td className="capitalize">{v.property_type || "—"}</td>
+                <td>
+                  <select value={v.zone || ""} onChange={(e) => quick(v, "zone", e.target.value)} aria-label="Location" data-testid="quick-zone" className={`border rounded-md px-2 py-1 text-sm bg-white max-w-[150px] ${v.zone ? "" : "text-amber-600 border-amber-300"}`}>
+                    <option value="">missing</option>{[...new Set([...zones, v.zone].filter(Boolean))].map(z => <option key={z} value={z}>{z}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select value={v.property_type || ""} onChange={(e) => quick(v, "property_type", e.target.value)} aria-label="Type" data-testid="quick-type" className={`border rounded-md px-2 py-1 text-sm bg-white capitalize ${(v.locked_fields || []).includes("property_type") ? "border-urbanex-gold" : ""}`}>
+                    <option value="">—</option>{["apartment", "villa", "plot", "commercial"].map(x => <option key={x} value={x}>{x}</option>)}
+                  </select>
+                </td>
                 <td>{v.bedrooms ?? "—"}</td>
                 <td>{v.area_sqft || "—"}</td>
                 <td className={v.price_inr ? "" : "text-amber-600"}>{v.price_inr ? inr(v.price_inr) : "missing"}</td>

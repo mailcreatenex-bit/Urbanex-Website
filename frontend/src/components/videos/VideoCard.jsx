@@ -21,10 +21,10 @@ export default function VideoCard({ video }) {
       </div>
       <div className="p-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-urbanex-navy/60">
-          {video.zone && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-urbanex-gold"/> {video.zone}</span>}
+          <span className="flex items-center gap-1" data-testid="video-card-zone"><MapPin className="w-3.5 h-3.5 text-urbanex-gold"/> {video.zone || "Burdwan"}</span>
           {video.bedrooms != null && <span className="flex items-center gap-1"><BedDouble className="w-3.5 h-3.5 text-urbanex-gold"/> {video.bedrooms} BHK</span>}
           {video.area_sqft && <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-urbanex-gold"/> {video.area_sqft} sqft</span>}
-          {video.property_type && <span className="capitalize">{t(`type.${video.property_type}`)}</span>}
+          {video.property_type && <span className="capitalize bg-urbanex-gold/15 text-urbanex-navy rounded-full px-2.5 py-0.5" data-testid="video-card-type">{t(`type.${video.property_type}`)}</span>}
         </div>
         <Link to={`/properties/video/${video.video_id}`} className="mt-2 block font-display text-xl text-urbanex-navy leading-snug line-clamp-2 hover:text-urbanex-gold transition-colors">{video.title}</Link>
         <div className="mt-4"><PriceBlock type="video" item={video}/></div>
