@@ -2,12 +2,14 @@ import { Link } from "react-router-dom";
 import { BedDouble, MapPin, Ruler } from "lucide-react";
 import PriceBlock from "@/components/common/PriceBlock";
 import YouTubeClip from "@/components/videos/YouTubeClip";
+import Tilt from "@/components/fx/Tilt";
 import { useI18n } from "@/context/I18nContext";
 
 export default function VideoCard({ video }) {
   const { t } = useI18n();
   const dur = video.duration_seconds ? `${Math.floor(video.duration_seconds / 60)}:${String(video.duration_seconds % 60).padStart(2, "0")}` : null;
   return (
+    <Tilt className="rounded-2xl" max={5}>
     <article className="group bg-white rounded-2xl overflow-hidden border border-urbanex-navy/5 hover:border-urbanex-gold/40 shadow-[0_4px_20px_-4px_rgba(10,18,37,0.05)] hover:shadow-[0_20px_50px_-20px_rgba(10,18,37,0.18)] transition-all duration-500" data-testid={`video-card-${video.video_id}`}>
       <div className="relative">
         <YouTubeClip id={video.video_id} title={video.title} thumbnail={video.thumbnail} className="rounded-none"/>
@@ -28,5 +30,6 @@ export default function VideoCard({ video }) {
         <div className="mt-4"><PriceBlock type="video" item={video}/></div>
       </div>
     </article>
+    </Tilt>
   );
 }

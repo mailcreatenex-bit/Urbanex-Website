@@ -83,7 +83,7 @@ export default function PropertiesAdminPage() {
           <tbody>
             {items.map(p => (
               <tr key={p.id} className="border-b last:border-0">
-                <td className="p-3 flex items-center gap-3"><img src={assetUrl(p.image)} alt="" className="w-14 h-10 object-cover rounded"/><span className="font-medium">{p.title}</span></td>
+                <td className="p-3 flex items-center gap-3"><img src={assetUrl(p.image, 160)} alt="" className="w-14 h-10 object-cover rounded"/><span className="font-medium">{p.title}</span></td>
                 <td>{p.zone}</td>
                 <td>{inr(p.price_inr)}</td>
                 <td>

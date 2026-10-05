@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, LogOut, LayoutDashboard, Heart } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -20,6 +20,14 @@ const LINKS = [
 export default function Navbar() {
   const { user, logout, setLoginOpen } = useAuth();
   const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const on = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; setCompact(window.scrollY > 48); }); };
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => { window.removeEventListener("scroll", on); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   const nav = useNavigate();
   const { t, lang, setLang } = useI18n();
   const { ids } = useFavorites();
@@ -27,13 +35,13 @@ export default function Navbar() {
   const toggleLang = () => setLang(lang === "en" ? "bn" : "en");
 
   return (
-    <header className="sticky top-0 z-40 bg-urbanex-ivory/90 backdrop-blur-xl border-b border-urbanex-navy/10">
-      <div className="max-w-7xl mx-auto px-5 md:px-10 flex items-center justify-between h-24 md:h-28">
+    <header className={`sticky top-0 z-40 backdrop-blur-xl border-b border-urbanex-navy/10 transition-all duration-300 ${compact ? "bg-urbanex-ivory/95 shadow-[0_8px_30px_-18px_rgba(10,18,37,0.35)]" : "bg-urbanex-ivory/80"}`}>
+      <div className={`max-w-7xl mx-auto px-5 md:px-10 flex items-center justify-between transition-all duration-300 ${compact ? "h-16 md:h-[72px]" : "h-24 md:h-28"}`}>
         <Link to="/" data-testid={NAV.brand} className="flex items-center gap-3 group">
           <img
             src="/brand/urbanex-logo.png"
             alt="Urbanex Realty"
-            className="h-16 md:h-20 lg:h-24 w-auto object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+            className={`${compact ? "h-9 md:h-11" : "h-16 md:h-20 lg:h-24"} w-auto object-contain transition-all duration-300 group-hover:scale-[1.04]`}
           />
           <div className="hidden sm:block leading-tight border-l border-urbanex-navy/15 pl-3">
             <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold font-semibold">Since 2022</div>

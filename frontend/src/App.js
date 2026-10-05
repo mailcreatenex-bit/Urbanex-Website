@@ -9,22 +9,24 @@ import { Toaster } from "sonner";
 
 import PublicLayout from "@/components/layout/PublicLayout";
 import HomePage from "@/pages/HomePage";
-import PropertiesPage from "@/pages/PropertiesPage";
-import PropertyDetailPage from "@/pages/PropertyDetailPage";
-import AboutPage from "@/pages/AboutPage";
-import ContactPage from "@/pages/ContactPage";
-import ConstructionPage from "@/pages/ConstructionPage";
-import TermsPage from "@/pages/TermsPage";
-import PrivacyPage from "@/pages/PrivacyPage";
 import AuthCallback from "@/pages/AuthCallback";
-import ComparePage from "@/pages/ComparePage";
-import ShortlistPage from "@/pages/ShortlistPage";
-import BlogPage from "@/pages/BlogPage";
-import BlogPostPage from "@/pages/BlogPostPage";
-import ZoneQuizPage from "@/pages/ZoneQuizPage";
-import NriPage from "@/pages/NriPage";
-import VideosPage from "@/pages/VideosPage";
-import VideoDetailPage from "@/pages/VideoDetailPage";
+
+// Public pages other than the home page load on demand, so first paint ships as little code as possible.
+const PropertiesPage = lazy(() => import("@/pages/PropertiesPage"));
+const PropertyDetailPage = lazy(() => import("@/pages/PropertyDetailPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const ConstructionPage = lazy(() => import("@/pages/ConstructionPage"));
+const TermsPage = lazy(() => import("@/pages/TermsPage"));
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
+const ComparePage = lazy(() => import("@/pages/ComparePage"));
+const ShortlistPage = lazy(() => import("@/pages/ShortlistPage"));
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const ZoneQuizPage = lazy(() => import("@/pages/ZoneQuizPage"));
+const NriPage = lazy(() => import("@/pages/NriPage"));
+const VideosPage = lazy(() => import("@/pages/VideosPage"));
+const VideoDetailPage = lazy(() => import("@/pages/VideoDetailPage"));
 
 // The admin area is only needed by Ayan, so keep it out of the public bundle.
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));

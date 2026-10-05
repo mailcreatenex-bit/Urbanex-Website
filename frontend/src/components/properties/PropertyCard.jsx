@@ -4,6 +4,7 @@ import { MapPin, BedDouble, Bath, Ruler, ArrowRight, Heart, ShieldCheck, GitComp
 import { useFavorites, MAX_COMPARE } from "@/context/FavoritesContext";
 import { useI18n } from "@/context/I18nContext";
 import PriceBlock from "@/components/common/PriceBlock";
+import Tilt from "@/components/fx/Tilt";
 import { PROP } from "@/constants/testIds";
 import { assetUrl } from "@/lib/config";
 
@@ -15,6 +16,7 @@ export default function PropertyCard({ property, idx = 0 }) {
   const href = `/properties/${property.slug || property.id}`;
 
   return (
+    <Tilt className="rounded-2xl" max={6}>
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -26,13 +28,13 @@ export default function PropertyCard({ property, idx = 0 }) {
       <div className="relative aspect-[5/4] overflow-hidden">
         <Link to={href} aria-label={property.title}>
           <img
-            src={assetUrl(property.image)}
+            src={assetUrl(property.image, 800)}
             alt={property.title}
             loading="lazy"
             decoding="async"
             width="800"
             height="640"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            className="tilt-depth w-full h-full object-cover"
           />
         </Link>
         <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-16">
@@ -98,5 +100,6 @@ export default function PropertyCard({ property, idx = 0 }) {
         </label>
       </div>
     </motion.div>
+    </Tilt>
   );
 }

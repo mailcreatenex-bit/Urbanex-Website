@@ -63,7 +63,7 @@ export default function ComparePage() {
                   <th key={p.id} className="align-top p-3 text-left font-normal">
                     <div className="relative">
                       <button onClick={() => remove(p.id)} aria-label="Remove" className="absolute -top-1 right-0 p-1 rounded-full bg-white shadow"><X className="w-3 h-3"/></button>
-                      <img src={assetUrl(p.image)} alt={p.title} loading="lazy" className="w-full aspect-video object-cover rounded-xl"/>
+                      <img src={assetUrl(p.image, 600)} alt={p.title} loading="lazy" className="w-full aspect-video object-cover rounded-xl"/>
                       <Link to={`/properties/${p.slug || p.id}`} className="mt-2 block font-display text-xl text-urbanex-navy hover:text-urbanex-gold">{p.title}</Link>
                     </div>
                   </th>

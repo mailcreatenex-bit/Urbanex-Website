@@ -128,7 +128,7 @@ function Results({ id, data, onRetake }) {
               <div className="mt-3 grid sm:grid-cols-3 gap-3">
                 {r.listings.map(l => (
                   <Link key={l.id} to={`/properties/${l.slug || l.id}`} className="group block rounded-xl overflow-hidden border border-urbanex-navy/10 hover:border-urbanex-gold">
-                    <img src={assetUrl(l.image)} alt="" loading="lazy" className="w-full aspect-video object-cover"/>
+                    <img src={assetUrl(l.image, 480)} alt="" loading="lazy" className="w-full aspect-video object-cover"/>
                     <div className="p-3">
                       <div className="text-sm font-medium text-urbanex-navy line-clamp-1 group-hover:text-urbanex-gold">{l.title}</div>
                       <div className="text-xs text-urbanex-navy/60">{l.bedrooms ? `${l.bedrooms} BHK · ` : ""}{l.area_sqft} sqft{unlocked("property", l.id)?.price_inr ? ` · ${inr(unlocked("property", l.id).price_inr)}` : ""}</div>

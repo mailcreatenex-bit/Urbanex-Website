@@ -75,7 +75,7 @@ export default function AssistantWidget() {
                 <div className="bg-urbanex-cream rounded-2xl rounded-tl-sm px-4 py-3 text-urbanex-navy/90 whitespace-pre-line" data-testid="assistant-reply">{m.content}</div>
                 {(m.extra?.properties || []).map(p => (
                   <Link key={p.id} to={`/properties/${p.slug}`} onClick={() => setOpen(false)} className="flex gap-3 items-center border border-urbanex-navy/10 hover:border-urbanex-gold rounded-xl p-2">
-                    <img src={assetUrl(p.image)} alt="" loading="lazy" className="w-16 h-12 object-cover rounded-lg"/>
+                    <img src={assetUrl(p.image, 160)} alt="" loading="lazy" className="w-16 h-12 object-cover rounded-lg"/>
                     <div className="min-w-0">
                       <div className="font-medium text-urbanex-navy truncate">{p.title}</div>
                       <div className="text-xs text-urbanex-navy/60">{p.zone}{p.bedrooms ? ` · ${p.bedrooms} BHK` : ""} · {p.area_sqft} sqft{unlocked("property", p.id)?.price_inr ? ` · ${inr(unlocked("property", p.id).price_inr)}` : ""}</div>

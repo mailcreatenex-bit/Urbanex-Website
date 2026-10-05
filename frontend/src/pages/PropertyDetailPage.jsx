@@ -13,11 +13,13 @@ import Calculators from "@/components/properties/Calculators";
 import VisitBooking from "@/components/properties/VisitBooking";
 import ReviewsSection from "@/components/properties/ReviewsSection";
 import ShareBar from "@/components/properties/ShareBar";
+import Tilt from "@/components/fx/Tilt";
 
 export default function PropertyDetailPage() {
   const { id } = useParams();
   const [p, setP] = useState(null);
   const [missing, setMissing] = useState(false);
+  const [shot, setShot] = useState(0);
   const { user, loading } = useAuth();
   const { has, toggle } = useFavorites();
   const { t } = useI18n();
@@ -72,14 +74,28 @@ export default function PropertyDetailPage() {
 
       <div className="grid md:grid-cols-12 gap-10">
         <div className="md:col-span-8">
-          <div className="rounded-3xl overflow-hidden aspect-[16/10] bg-urbanex-navy/5">
-            <img src={assetUrl(p.image)} alt={p.title} className="w-full h-full object-cover" width="1280" height="800"/>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-3">
-            {(p.gallery || []).map((g, i) => (
-              <img key={i} src={assetUrl(g)} alt="" loading="lazy" decoding="async" className="rounded-xl aspect-video object-cover"/>
-            ))}
-          </div>
+          {(() => {
+            const shots = [p.image, ...(p.gallery || [])];
+            return (
+              <>
+                <Tilt className="rounded-3xl" max={2.5}>
+                  <div className="rounded-3xl overflow-hidden aspect-[16/10] bg-urbanex-navy/5">
+                    <img key={shot} src={assetUrl(shots[shot] || p.image, 1280)} alt={p.title} className="tilt-depth w-full h-full object-cover animate-in fade-in duration-500" width="1280" height="800"/>
+                  </div>
+                </Tilt>
+                {shots.length > 1 && (
+                  <div className="grid grid-cols-4 gap-3 mt-3">
+                    {shots.map((g, i) => (
+                      <button key={i} type="button" onClick={() => setShot(i)} aria-label={`Photo ${i + 1}`} aria-pressed={shot === i}
+                        className={`rounded-xl overflow-hidden ring-2 transition-all ${shot === i ? "ring-urbanex-gold" : "ring-transparent opacity-70 hover:opacity-100"}`}>
+                        <img src={assetUrl(g, 400)} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover"/>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           <div className="mt-10">
             <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold flex items-center gap-2"><MapPin className="w-3 h-3"/> {p.zone}</div>
@@ -126,7 +142,7 @@ export default function PropertyDetailPage() {
               <div className="mt-10">
                 <h2 className="font-display text-2xl text-urbanex-navy mb-3">{t("detail.floorPlan")}</h2>
                 <a href={assetUrl(p.floor_plan)} target="_blank" rel="noreferrer">
-                  <img src={assetUrl(p.floor_plan)} alt={t("detail.floorPlan")} loading="lazy" className="rounded-xl border border-urbanex-navy/10 max-h-96 object-contain bg-white"/>
+                  <img src={assetUrl(p.floor_plan, 1000)} alt={t("detail.floorPlan")} loading="lazy" className="rounded-xl border border-urbanex-navy/10 max-h-96 object-contain bg-white"/>
                 </a>
               </div>
             )}

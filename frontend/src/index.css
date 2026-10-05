@@ -76,3 +76,61 @@
     border-left-color: inherit; border-right-color: inherit; border-top-color: inherit; border-bottom-color: inherit;
   }
 }
+
+/* ===== Motion effects (lightweight: transforms + opacity only; all disabled for prefers-reduced-motion) ===== */
+@layer components {
+  .tilt {
+    position: relative;
+    transform: perspective(900px) rotateX(calc(var(--my, 0) * var(--tilt, 7deg) * -1)) rotateY(calc(var(--mx, 0) * var(--tilt, 7deg)));
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1);
+    touch-action: pan-y;               /* vertical swipes still scroll; sideways drags tilt */
+  }
+  .tilt[data-active="1"] { transition: transform .09s linear; will-change: transform; }
+  .tilt-glare::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+    transition: opacity .3s;
+    background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .30), transparent 55%);
+  }
+  .tilt-glare[data-active="1"]::after { opacity: 1; }
+  /* an inner layer that slides the opposite way for a parallax-in-the-card feel */
+  .tilt-depth {
+    transform: translate3d(calc(var(--mx, 0) * -9px), calc(var(--my, 0) * -9px), 0) scale(1.1);
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1);
+  }
+  .tilt[data-active="1"] .tilt-depth { transition: transform .09s linear; }
+
+  .cursor-glow {
+    position: fixed; top: 0; left: 0; width: 400px; height: 400px; border-radius: 50%;
+    pointer-events: none; z-index: 5; will-change: transform; transition: opacity .4s;
+    background: radial-gradient(circle, rgba(197, 160, 89, .11), transparent 62%);
+  }
+
+  .hero-layer { transition: transform .35s cubic-bezier(.2, .8, .2, 1); will-change: transform; }
+  .word {
+    display: inline-block; opacity: 0; transform-origin: 50% 100%;
+    animation: wordIn .85s cubic-bezier(.2, .8, .2, 1) forwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+  }
+  @keyframes wordIn { from { opacity: 0; transform: translateY(.55em) rotateX(-55deg); } to { opacity: 1; transform: none; } }
+  @keyframes floaty { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+  .floaty { animation: floaty 6s ease-in-out infinite; }
+  .page-in { animation: pageIn .5s cubic-bezier(.2, .8, .2, 1); }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .btn-shine { position: relative; overflow: hidden; }
+  .btn-shine::after {
+    content: ""; position: absolute; inset: 0; transform: translateX(-130%); pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .6) 50%, transparent 70%);
+  }
+  .btn-shine:hover::after { transform: translateX(130%); transition: transform .8s ease; }
+
+  .text-gold-gradient { background: linear-gradient(100deg, #B8903F, #F2E2B0 45%, #C5A059); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .glass { background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .2); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: 1px 720px; }   /* skip rendering off-screen sections */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .word { opacity: 1; animation: none; }
+  .tilt, .tilt-depth, .hero-layer { transform: none !important; }
+  .floaty, .page-in { animation: none; }
+}

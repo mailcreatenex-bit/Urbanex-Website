@@ -8,6 +8,7 @@ import ZonesMarquee from "@/components/home/ZonesMarquee";
 import TestimonialsSlider from "@/components/home/TestimonialsSlider";
 import VideoShowcase from "@/components/home/VideoShowcase";
 import HomeCtas from "@/components/home/HomeCtas";
+import Tilt from "@/components/fx/Tilt";
 import PropertyCard from "@/components/properties/PropertyCard";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -35,7 +36,7 @@ export default function HomePage() {
       <PromoBand/>
 
       {/* Pillars */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-24">
+      <section className="cv-auto max-w-7xl mx-auto px-6 md:px-12 py-24">
         <div className="grid md:grid-cols-12 gap-10 items-start">
           <div className="md:col-span-5">
             <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-4">Why Urbanex</div>
@@ -48,13 +49,15 @@ export default function HomePage() {
           </div>
           <div className="md:col-span-7 grid sm:grid-cols-2 gap-5">
             {PILLARS.map((p, i) => (
-              <motion.div key={p.title}
+              <Tilt key={p.title} className="rounded-2xl" max={7}>
+              <motion.div
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.5 }}
-                className="p-6 rounded-2xl bg-white border border-urbanex-navy/5 hover:border-urbanex-gold/40 transition-colors">
+                className="h-full p-6 rounded-2xl bg-white border border-urbanex-navy/5 hover:border-urbanex-gold/40 transition-colors">
                 <p.icon className="w-6 h-6 text-urbanex-gold"/>
                 <div className="mt-4 font-display text-xl text-urbanex-navy">{p.title}</div>
                 <div className="mt-2 text-sm text-urbanex-navy/70 leading-relaxed">{p.body}</div>
               </motion.div>
+              </Tilt>
             ))}
           </div>
         </div>
