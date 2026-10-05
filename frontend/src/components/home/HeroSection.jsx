@@ -9,9 +9,10 @@ import Magnetic from "@/components/fx/Magnetic";
 import Counter from "@/components/fx/Counter";
 
 // Scroll-scrubbed hero: the video's playhead is tied to how far you have scrolled, so scrolling "plays" the film.
-// The poster photo paints first (fast), the video is fetched right after first paint and fades in when ready.
+// The poster (the film's first frame) paints first; the video is fetched right after first paint and fades in when ready.
 // On top sit depth layers that also react to the cursor, a finger drag or the phone's tilt (Android).
-export const HERO_IMG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=70&auto=format&fit=crop";
+// The poster is the film's own first frame (32 KB), so when the video fades in nothing visibly changes.
+export const HERO_IMG = "/videos/hero-poster.jpg";
 const HEADLINE = ["Homes", "worth", "every", "rupee", "—", "chosen,", "built,", "delivered."];
 
 function useDepthPointer(ref) {
@@ -122,7 +123,7 @@ export default function HeroSection() {
         <div className="hero-layer absolute inset-[-3%]" style={depth(-12)}>
           <img src={HERO_IMG} alt="" fetchpriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover"/>
           {video && (
-            <video ref={videoRef} muted playsInline preload="none" disablePictureInPicture data-testid="hero-video"
+            <video ref={videoRef} muted playsInline preload="none" poster={HERO_IMG} disablePictureInPicture data-testid="hero-video"
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`}>
               <source src="/videos/hero-scroll.mp4" type="video/mp4"/>
               <source src="/videos/hero-scroll.webm" type="video/webm"/>
