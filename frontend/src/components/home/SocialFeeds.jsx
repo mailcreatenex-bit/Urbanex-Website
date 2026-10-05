@@ -65,7 +65,7 @@ export default function SocialFeeds() {
           <div className="space-y-3">
             {videos.length === 0 && <div className="text-sm text-urbanex-navy/50 py-10 text-center">{t("social.noVideos")}</div>}
             {videos.map(v => (
-              <Link key={v.video_id} to={`/videos/${v.video_id}`} className="group flex gap-3 items-center rounded-xl hover:bg-urbanex-cream/60 p-1.5 -m-1.5 transition-colors">
+              <Link key={v.video_id} to={`/properties/video/${v.video_id}`} className="group flex gap-3 items-center rounded-xl hover:bg-urbanex-cream/60 p-1.5 -m-1.5 transition-colors">
                 <img src={assetUrl(v.thumbnail)} alt="" loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; }} className="w-28 aspect-video object-cover rounded-lg shrink-0"/>
                 <div className="min-w-0">
                   <div className="text-sm text-urbanex-navy leading-snug line-clamp-2 group-hover:text-urbanex-gold transition-colors">{v.title}</div>

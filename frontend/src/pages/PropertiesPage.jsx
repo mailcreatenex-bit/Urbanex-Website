@@ -5,6 +5,7 @@ import { Bookmark, Map as MapIcon, LayoutGrid, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import PropertyCard from "@/components/properties/PropertyCard";
 import PropertyMap from "@/components/properties/PropertyMap";
+import VideoTours from "@/components/videos/VideoTours";
 import { api } from "@/lib/api";
 import { PROP } from "@/constants/testIds";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +35,7 @@ export default function PropertiesPage() {
   const [zones, setZones] = useState([]);
   const [items, setItems] = useState([]);
   const [saved, setSaved] = useState([]);
+  const [videoCount, setVideoCount] = useState(0);
 
   useEffect(() => { api.get("/config/public").then(r => setZones(r.data.zones || [])).catch(() => {}); }, []);
 
@@ -131,7 +133,7 @@ export default function PropertiesPage() {
             <Bookmark className="w-3.5 h-3.5"/> {user ? t("props.saveSearch") : t("props.signinSave")}
           </button>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-urbanex-navy/50 font-mono">{t("props.results", { n: items.length })}</span>
+            <span className="text-xs text-urbanex-navy/50 font-mono">{t("props.results", { n: items.length + videoCount })}</span>
             <div className="flex rounded-full border border-urbanex-navy/20 overflow-hidden">
               {[["list", LayoutGrid, t("props.list")], ["map", MapIcon, t("props.map")]].map(([k, Icon, label]) => (
                 <button key={k} type="button" onClick={() => setView(k)} aria-pressed={view === k} data-testid={`view-${k}`}
@@ -165,7 +167,9 @@ export default function PropertiesPage() {
         {items.map((p, i) => <PropertyCard key={p.id} property={p} idx={i}/>)}
       </div>
 
-      {!items.length && <div className="py-24 text-center text-urbanex-navy/50">{t("props.none")}</div>}
+      {!items.length && !videoCount && <div className="py-24 text-center text-urbanex-navy/50">{t("props.none")}</div>}
+
+      <VideoTours filters={f} onTotal={setVideoCount}/>
 
       <div className="mt-20 pt-10 border-t border-urbanex-navy/10"><DigestSignup/></div>
 

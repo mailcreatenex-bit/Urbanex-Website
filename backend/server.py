@@ -1529,7 +1529,7 @@ async def admin_delete_post(pid: str, request: Request):
     return {"ok": True}
 
 # =============== SEO: sitemap + social-share pages ===============
-STATIC_PAGES = ["/", "/properties", "/videos", "/construction", "/about", "/contact", "/blog", "/zone-quiz", "/nri", "/terms", "/privacy"]
+STATIC_PAGES = ["/", "/properties", "/construction", "/about", "/contact", "/blog", "/zone-quiz", "/nri", "/terms", "/privacy"]
 
 @api.get("/sitemap.xml")
 async def sitemap():
@@ -1537,7 +1537,7 @@ async def sitemap():
     async for d in db.properties.find({}, {"_id": 0, "id": 1, "slug": 1}):
         urls.append((f"/properties/{d.get('slug') or d['id']}", None))
     async for d in db.videos.find({"hidden": {"$ne": True}, "missing": {"$ne": True}}, {"_id": 0, "video_id": 1, "published_at": 1}).limit(5000):
-        urls.append((f"/videos/{d['video_id']}", (d.get("published_at") or "")[:10] or None))
+        urls.append((f"/properties/video/{d['video_id']}", (d.get("published_at") or "")[:10] or None))
     async for d in db.posts.find({"published": True}, {"_id": 0, "slug": 1, "updated_at": 1}):
         urls.append((f"/blog/{d['slug']}", (d.get("updated_at") or "")[:10] or None))
     rows = "".join(
@@ -2608,7 +2608,7 @@ async def sync_youtube_api(full: bool = False) -> dict:
             await notify_admin("video", f"{stats['new']} new YouTube video{'s' if stats['new'] != 1 else ''} synced",
                                names if stats["new"] <= 3 else f"{names} and more. Add price/location in Admin > Videos.", link="/admin/videos")
             if had_videos and stats["new"] <= 3:
-                spawn(auto_push("New video tour", stats["new_titles"][0], "/videos", "new-video"))
+                spawn(auto_push("New video tour", stats["new_titles"][0], "/properties", "new-video"))
         return stats
     except Exception as e:
         logging.warning(f"YouTube sync failed: {type(e).__name__}: {e}")
@@ -2674,7 +2674,7 @@ async def sync_youtube_rss() -> dict:
             await notify_admin("video", f"{stats['new']} new YouTube video{'s' if stats['new'] != 1 else ''} synced",
                                ", ".join(stats["new_titles"][:3]), link="/admin/videos")
             if had_videos and stats["new"] <= 3:
-                spawn(auto_push("New video tour", stats["new_titles"][0], "/videos", "new-video"))
+                spawn(auto_push("New video tour", stats["new_titles"][0], "/properties", "new-video"))
         return stats
     except Exception as e:
         logging.warning(f"YouTube feed sync failed: {type(e).__name__}: {e}")
@@ -3099,7 +3099,7 @@ async def share_video(video_id: str):
         raise HTTPException(404, "Video not found")
     bits = [b for b in (v.get("zone"), f"{v['bedrooms']} BHK" if v.get("bedrooms") else None) if b]
     return share_page(f"{v['title']} | Urbanex Realty", " · ".join(bits) or (v.get("description") or "Property video tour by Urbanex Realty")[:150],
-                      v.get("thumbnail") or "", f"{PUBLIC_SITE_URL}/videos/{video_id}")
+                      v.get("thumbnail") or "", f"{PUBLIC_SITE_URL}/properties/video/{video_id}")
 
 
 # =============== Web Push notifications (installable app + browser alerts) ===============

@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { to: "/", key: "nav.home", tid: NAV.home },
   { to: "/properties", key: "nav.properties", tid: NAV.properties },
-  { to: "/videos", key: "nav.videos", tid: "nav-videos" },
   { to: "/blog", key: "nav.blog", tid: "nav-blog" },
   { to: "/construction", key: "nav.construction", tid: NAV.construction },
   { to: "/about", key: "nav.about", tid: NAV.about },

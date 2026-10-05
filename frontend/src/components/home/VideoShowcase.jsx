@@ -24,7 +24,7 @@ export default function VideoShowcase() {
             Watch every property before you visit.
           </h2>
         </div>
-        <div className="flex items-center gap-5 text-sm"><Link to="/videos" data-testid="home-browse-videos" className="text-urbanex-navy hover:text-urbanex-gold">Browse all videos →</Link><a href="https://www.youtube.com/@urbanexbyayandey" target="_blank" rel="noreferrer" className="text-urbanex-navy/60 hover:text-urbanex-gold">Full channel →</a></div>
+        <div className="flex items-center gap-5 text-sm"><Link to="/properties" data-testid="home-browse-videos" className="text-urbanex-navy hover:text-urbanex-gold">Browse all videos →</Link><a href="https://www.youtube.com/@urbanexbyayandey" target="_blank" rel="noreferrer" className="text-urbanex-navy/60 hover:text-urbanex-gold">Full channel →</a></div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">

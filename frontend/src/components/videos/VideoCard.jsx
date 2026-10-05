@@ -26,7 +26,7 @@ export default function VideoCard({ video }) {
           {video.area_sqft && <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-urbanex-gold"/> {video.area_sqft} sqft</span>}
           {video.property_type && <span className="capitalize">{t(`type.${video.property_type}`)}</span>}
         </div>
-        <Link to={`/videos/${video.video_id}`} className="mt-2 block font-display text-xl text-urbanex-navy leading-snug line-clamp-2 hover:text-urbanex-gold transition-colors">{video.title}</Link>
+        <Link to={`/properties/video/${video.video_id}`} className="mt-2 block font-display text-xl text-urbanex-navy leading-snug line-clamp-2 hover:text-urbanex-gold transition-colors">{video.title}</Link>
         <div className="mt-4"><PriceBlock type="video" item={video}/></div>
       </div>
     </article>

@@ -1,6 +1,6 @@
 import "@/App.css";
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { ViewerProvider } from "@/context/ViewerContext";
@@ -26,8 +26,9 @@ const BlogPage = lazy(() => import("@/pages/BlogPage"));
 const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
 const ZoneQuizPage = lazy(() => import("@/pages/ZoneQuizPage"));
 const NriPage = lazy(() => import("@/pages/NriPage"));
-const VideosPage = lazy(() => import("@/pages/VideosPage"));
 const VideoDetailPage = lazy(() => import("@/pages/VideoDetailPage"));
+// old /videos/<id> links (YouTube descriptions, shared posts, push messages) keep working
+function LegacyVideoRedirect() { const { id } = useParams(); return <Navigate to={`/properties/video/${id}`} replace/>; }
 
 // The admin area is only needed by Ayan, so keep it out of the public bundle.
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
@@ -54,8 +55,9 @@ function AppRouter() {
         <Route path="/" element={<HomePage/>}/>
         <Route path="/properties" element={<PropertiesPage/>}/>
         <Route path="/properties/:id" element={<PropertyDetailPage/>}/>
-        <Route path="/videos" element={<VideosPage/>}/>
-        <Route path="/videos/:id" element={<VideoDetailPage/>}/>
+        <Route path="/properties/video/:id" element={<VideoDetailPage/>}/>
+        <Route path="/videos" element={<Navigate to="/properties" replace/>}/>
+        <Route path="/videos/:id" element={<LegacyVideoRedirect/>}/>
         <Route path="/zone-quiz" element={<ZoneQuizPage/>}/>
         <Route path="/zone-quiz/r/:id" element={<ZoneQuizPage/>}/>
         <Route path="/nri" element={<NriPage/>}/>

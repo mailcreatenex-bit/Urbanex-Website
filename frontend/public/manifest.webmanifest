@@ -18,7 +18,7 @@
   ],
   "shortcuts": [
     { "name": "Properties", "url": "/properties?source=shortcut", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Video tours", "url": "/videos?source=shortcut", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Video tours", "url": "/properties?source=shortcut", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Find my zone", "url": "/zone-quiz?source=shortcut", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

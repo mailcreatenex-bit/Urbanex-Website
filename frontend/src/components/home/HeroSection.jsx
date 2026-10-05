@@ -177,7 +177,7 @@ export default function HeroSection() {
                 </Link>
               </Magnetic>
               <Magnetic>
-                <Link to="/videos" data-testid="hero-videos"
+                <Link to="/properties" data-testid="hero-videos"
                   className="group inline-flex items-center gap-2 glass hover:border-urbanex-gold text-urbanex-ivory px-6 py-4 rounded-full text-sm tracking-wide transition-colors">
                   <PlayCircle className="w-4 h-4 text-urbanex-gold"/> Watch video tours
                 </Link>

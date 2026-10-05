@@ -4,12 +4,12 @@ import { Bell, Send } from "lucide-react";
 import { api } from "@/lib/api";
 import { usePwa } from "@/context/PwaContext";
 
-const LINKS = [["/", "Home"], ["/videos", "Video tours"], ["/properties", "Properties"], ["/zone-quiz", "Find my zone"], ["/nri", "NRI desk"]];
+const LINKS = [["/", "Home"], ["/properties", "Properties"], ["/zone-quiz", "Find my zone"], ["/nri", "NRI desk"]];
 const inp = "w-full border rounded-lg px-3 py-2 text-sm bg-white";
 
 export default function PushAdminPage() {
   const [info, setInfo] = useState({ subscribers: 0, auto: true, recent: [] });
-  const [f, setF] = useState({ title: "", body: "", url: "/videos", image: "" });
+  const [f, setF] = useState({ title: "", body: "", url: "/properties", image: "" });
   const [busy, setBusy] = useState(false);
   const { push, enablePush } = usePwa();
   const load = useCallback(() => api.get("/admin/push").then(r => setInfo(r.data)).catch(() => {}), []);

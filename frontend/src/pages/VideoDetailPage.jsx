@@ -33,13 +33,13 @@ export default function VideoDetailPage() {
       thumbnailUrl: v.thumbnail, uploadDate: v.published_at, embedUrl: `https://www.youtube.com/embed/${v.video_id}` },
   } : { title: "Video" });
 
-  if (missing) return <div className="max-w-3xl mx-auto px-6 py-24 text-urbanex-navy/60">Video not found. <Link to="/videos" className="underline">{t("videos.back")}</Link></div>;
+  if (missing) return <div className="max-w-3xl mx-auto px-6 py-24 text-urbanex-navy/60">Video not found. <Link to="/properties" className="underline">{t("videos.back")}</Link></div>;
   if (!v) return <div className="max-w-3xl mx-auto px-6 py-24 text-urbanex-navy/50">{t("common.loading")}</div>;
 
   const link = shareUrl("videos", v.video_id);
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 md:py-16">
-      <Link to="/videos" className="inline-flex items-center gap-2 text-sm text-urbanex-navy/60 hover:text-urbanex-navy mb-8"><ArrowLeft className="w-4 h-4"/> {t("videos.back")}</Link>
+      <Link to="/properties" className="inline-flex items-center gap-2 text-sm text-urbanex-navy/60 hover:text-urbanex-navy mb-8"><ArrowLeft className="w-4 h-4"/> {t("videos.back")}</Link>
       <div className="grid md:grid-cols-12 gap-10">
         <div className="md:col-span-8">
           <YouTubeClip id={v.video_id} title={v.title} thumbnail={v.thumbnail} className="rounded-3xl"/>

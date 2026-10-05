@@ -362,7 +362,7 @@ def test_share_page_and_sitemap_include_videos(c, channel):
     v = listing(c)["items"][0]["video_id"]
     share = c.get(f"/api/share/videos/{v}")
     assert 'property="og:title"' in share.text and "price" not in share.text.lower()
-    assert f"/videos/{v}" in c.get("/api/sitemap.xml").text and "/videos<" in c.get("/api/sitemap.xml").text
+    assert f"/properties/video/{v}" in c.get("/api/sitemap.xml").text and "/videos<" not in c.get("/api/sitemap.xml").text
     assert c.get("/api/share/videos/nope").status_code == 404
 
 
