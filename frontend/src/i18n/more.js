@@ -71,6 +71,8 @@ export const en = {
   "videos.newest": "Newest first", "videos.oldest": "Oldest first", "videos.results": "{n} videos", "videos.more": "Load more", "videos.none": "No videos match these filters.",
   "videos.play": "Play video", "videos.short": "Short", "videos.more.zone": "More in {zone}", "videos.back": "All videos", "videos.watchOnYouTube": "Watch on YouTube",
   "videos.browseAll": "Browse all videos", "nav.videos": "Videos",
+  "social.eyebrow": "Follow along", "social.title": "Latest from Urbanex on social media", "social.follow": "Follow", "social.noVideos": "New videos will appear here.",
+  "social.threadsBody": "Short updates and thoughts from Ayan. Threads does not offer an embeddable feed, so open the profile to read the latest posts.", "social.threadsBtn": "Open on Threads",
   "latest.eyebrow": "Fresh from our YouTube channel", "latest.title": "Our latest video tours",
 };
 
@@ -132,5 +134,7 @@ export const bn = {
   "videos.newest": "নতুন আগে", "videos.oldest": "পুরোনো আগে", "videos.results": "{n}টি ভিডিও", "videos.more": "আরও দেখুন", "videos.none": "এই ফিল্টারে কোনো ভিডিও মেলেনি।",
   "videos.play": "ভিডিও চালান", "videos.short": "শর্ট", "videos.more.zone": "{zone}-এর আরও", "videos.back": "সব ভিডিও", "videos.watchOnYouTube": "ইউটিউবে দেখুন",
   "videos.browseAll": "সব ভিডিও দেখুন", "nav.videos": "ভিডিও",
+  "social.eyebrow": "সঙ্গে থাকুন", "social.title": "সোশ্যাল মিডিয়ায় আরবানেক্সের সর্বশেষ", "social.follow": "ফলো", "social.noVideos": "নতুন ভিডিও এখানে আসবে।",
+  "social.threadsBody": "আয়নের ছোট আপডেট ও ভাবনা। থ্রেডস এমবেড ফিড দেয় না, তাই সর্বশেষ পোস্ট পড়তে প্রোফাইল খুলুন।", "social.threadsBtn": "থ্রেডসে খুলুন",
   "latest.eyebrow": "আমাদের ইউটিউব চ্যানেল থেকে সদ্য", "latest.title": "আমাদের সর্বশেষ ভিডিও ট্যুর",
 };

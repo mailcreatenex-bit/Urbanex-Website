@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import DigestSignup from "@/components/common/DigestSignup";
-import { Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import SocialButtons from "@/components/common/SocialIcons";
 
 // "Crafted by" credit: the Cre8nex logo (public/brand/cre8nex-logo.png). If the file is missing it falls back to the plain text.
 function Cre8nexMark() {
@@ -57,10 +58,7 @@ export default function Footer() {
             <li className="flex items-center gap-2"><Mail className="w-4 h-4 text-urbanex-gold"/> hello@urbanex.in</li>
             <li className="flex items-start gap-2"><MapPin className="w-4 h-4 text-urbanex-gold mt-0.5"/> Burdwan, West Bengal, India</li>
           </ul>
-          <div className="flex gap-4 mt-5">
-            <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="text-urbanex-ivory/60 hover:text-urbanex-gold"><Instagram className="w-5 h-5"/></a>
-            <a href="https://www.youtube.com/@urbanexbyayandey" target="_blank" rel="noreferrer" className="text-urbanex-ivory/60 hover:text-urbanex-gold"><Youtube className="w-5 h-5"/></a>
-          </div>
+          <SocialButtons className="mt-5"/>
         </div>
       </div>
 

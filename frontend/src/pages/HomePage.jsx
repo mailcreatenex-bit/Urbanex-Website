@@ -7,6 +7,7 @@ import PromoBand from "@/components/home/PromoBand";
 import ZonesMarquee from "@/components/home/ZonesMarquee";
 import TestimonialsSlider from "@/components/home/TestimonialsSlider";
 import LatestVideos from "@/components/home/LatestVideos";
+import SocialFeeds from "@/components/home/SocialFeeds";
 import HomeCtas from "@/components/home/HomeCtas";
 import Tilt from "@/components/fx/Tilt";
 import PropertyCard from "@/components/properties/PropertyCard";
@@ -85,6 +86,7 @@ export default function HomePage() {
       </section>
 
       <TestimonialsSlider/>
+      <SocialFeeds/>
 
       {/* Construction CTA */}
       <section className="relative overflow-hidden">

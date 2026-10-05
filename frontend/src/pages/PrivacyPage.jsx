@@ -19,6 +19,7 @@ export default function PrivacyPage() {
 
       <h2 className="font-display text-2xl text-urbanex-navy mt-10 mb-3">Cookies</h2>
       <p>We use a single essential cookie (<code className="font-mono text-xs">session_token</code>) to keep you signed in. No advertising or third-party tracking cookies are set by us.</p>
+      <p>The home page has "latest posts" windows from our Facebook and Instagram profiles. They load only when you scroll to them, and those services (Meta) may then set their own cookies according to their policies. Video players load only when you press play.</p>
     </article>
   );
 }
