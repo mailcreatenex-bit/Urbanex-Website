@@ -6,12 +6,25 @@ import { useI18n } from "@/context/I18nContext";
 import { buildGreeting } from "@/lib/greeting";
 
 const SEEN = "urbanex_seen";
+const NAMED = "urbanex_greet_named";
+
+// Uses the name on roughly every other visit; the choice is kept for the browser session so it does not flip while browsing.
+function callByName() {
+  try {
+    const v = sessionStorage.getItem(NAMED);
+    if (v !== null) return v === "1";
+    const pick = Math.random() < 0.5;
+    sessionStorage.setItem(NAMED, pick ? "1" : "0");
+    return pick;
+  } catch { return true; }
+}
 
 // A friendly line under the hero: time of day in Burdwan, the visitor's name when signed in, and a wish on festival days.
 export default function GreetingBand() {
   const { user } = useAuth();
   const { lang } = useI18n();
   const [returning, setReturning] = useState(false);
+  const [useName] = useState(callByName);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -20,8 +33,8 @@ export default function GreetingBand() {
     return () => clearInterval(tick);
   }, []);
 
-  const g = useMemo(() => buildGreeting({ now, lang, name: user?.name || null, returning }),
-    [now, lang, user?.name, returning]);
+  const g = useMemo(() => buildGreeting({ now, lang, name: user?.name || null, returning, useName }),
+    [now, lang, user?.name, returning, useName]);
   const cta = lang === "bn" ? "নতুন বাড়ি দেখুন" : "See the new homes";
 
   return (

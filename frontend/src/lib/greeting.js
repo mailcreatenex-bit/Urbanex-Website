@@ -100,22 +100,24 @@ const LINES = {
 };
 
 /**
- * @param {{now?: Date, lang?: "en"|"bn", name?: string|null, returning?: boolean}} o
+ * @param {{now?: Date, lang?: "en"|"bn", name?: string|null, returning?: boolean, useName?: boolean}} o
+ * `useName` is decided by the caller (about half the visits), so a signed-in person is greeted by name only sometimes.
  * @returns {{emoji: string, title: string, text: string, special: boolean}}
  */
-export function buildGreeting({ now = new Date(), lang = "en", name = null, returning = false } = {}) {
+export function buildGreeting({ now = new Date(), lang = "en", name = null, returning = false, useName = true } = {}) {
   const l = lang === "bn" ? "bn" : "en";
   const { hour, y, m, d } = indiaNow(now);
   const tod = timeOfDay(hour);
   const first = name ? String(name).trim().split(/\s+/)[0] : "";
+  const call = useName ? first : "";   // the name is only spoken when asked to; being signed in still makes it a "welcome back"
   const sp = specialDay(now, l);
   if (sp) {
-    return { emoji: sp.emoji, title: first && !sp.upcoming ? `${sp.title.replace(/[!.]$/, "")}, ${first}!` : sp.title, text: sp.text, special: true };
+    return { emoji: sp.emoji, title: call && !sp.upcoming ? `${sp.title.replace(/[!.]$/, "")}, ${call}!` : sp.title, text: sp.text, special: true };
   }
   const pool = LINES[l][returning || first ? "back" : "new"][tod];
   const line = pool[(y * 372 + m * 31 + d) % pool.length];
   const hello = HELLO[l][tod];
   const emoji = { morning: "☀️", afternoon: "🌤️", evening: "🌇", night: "🌙" }[tod];
-  const title = tod === "night" && l === "en" ? (first ? `${hello}, ${first}?` : `${hello}?`) : first ? `${hello}, ${first}!` : `${hello}!`;
+  const title = tod === "night" && l === "en" ? (call ? `${hello}, ${call}?` : `${hello}?`) : call ? `${hello}, ${call}!` : `${hello}!`;
   return { emoji, title, text: line, special: false };
 }
