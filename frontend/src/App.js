@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { ViewerProvider } from "@/context/ViewerContext";
+import { PwaProvider } from "@/context/PwaContext";
 import { I18nProvider } from "@/context/I18nContext";
 import { Toaster } from "sonner";
 
@@ -40,6 +41,7 @@ const PostsAdminPage = lazy(() => import("@/pages/admin/PostsAdminPage"));
 const DigestAdminPage = lazy(() => import("@/pages/admin/DigestAdminPage"));
 const VideosAdminPage = lazy(() => import("@/pages/admin/VideosAdminPage"));
 const InterestsAdminPage = lazy(() => import("@/pages/admin/InterestsAdminPage"));
+const PushAdminPage = lazy(() => import("@/pages/admin/PushAdminPage"));
 
 function AppRouter() {
   const location = useLocation();
@@ -78,6 +80,7 @@ function AppRouter() {
         <Route path="digest" element={<DigestAdminPage/>}/>
         <Route path="videos" element={<VideosAdminPage/>}/>
         <Route path="interests" element={<InterestsAdminPage/>}/>
+        <Route path="push" element={<PushAdminPage/>}/>
         <Route path="reports" element={<ReportsPage/>}/>
         <Route path="invoices" element={<InvoicePage/>}/>
       </Route>
@@ -90,6 +93,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <I18nProvider>
+          <PwaProvider>
           <AuthProvider>
             <ViewerProvider>
             <FavoritesProvider>
@@ -100,6 +104,7 @@ function App() {
             </FavoritesProvider>
             </ViewerProvider>
           </AuthProvider>
+          </PwaProvider>
         </I18nProvider>
       </BrowserRouter>
     </div>

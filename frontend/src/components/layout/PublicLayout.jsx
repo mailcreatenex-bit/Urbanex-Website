@@ -7,6 +7,7 @@ import LoginModal from "@/components/common/LoginModal";
 import InterestModal from "@/components/common/InterestModal";
 import ScrollProgress from "@/components/fx/ScrollProgress";
 import CursorGlow from "@/components/fx/CursorGlow";
+import { InstallPill, InstallHelp } from "@/components/pwa/InstallUi";
 
 // The chat widget is not needed for first paint; it loads in the background.
 const AssistantWidget = lazy(() => import("@/components/assistant/AssistantWidget"));
@@ -24,6 +25,8 @@ export default function PublicLayout() {
       <Suspense fallback={null}><AssistantWidget/></Suspense>
       <LoginModal/>
       <InterestModal/>
+      <InstallPill/>
+      <InstallHelp/>
     </div>
   );
 }

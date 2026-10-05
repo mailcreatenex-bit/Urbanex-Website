@@ -6,6 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import re
+import base64
 import xml.etree.ElementTree as ET
 import hashlib
 import secrets
@@ -540,6 +541,8 @@ async def ensure_indexes():
         await db.digest_subscribers.create_index("token")
         await db.quiz_results.create_index("id", unique=True)
         await db.quiz_results.create_index("expires_at", expireAfterSeconds=0)
+        await db.push_subs.create_index("endpoint", unique=True)
+        await db.push_subs.create_index("user_id")
         await db.submissions.create_index("created_at", expireAfterSeconds=14 * 24 * 3600)
         await db.submissions.create_index("device_id")
         await db.submissions.create_index("phone_key")
@@ -1074,6 +1077,8 @@ async def admin_create_property(payload: PropertyFields, request: Request):
     prop["created_at"] = prop["created_at"].isoformat()
     await db.properties.insert_one(dict(prop))
     spawn(notify_saved_searches(prop))
+    if prop.get("status") == "available":
+        spawn(auto_push("New listing", f"{prop['title']} · {prop['zone']}", f"/properties/{prop['slug']}", "new-listing"))
     return prop
 
 @api.patch("/admin/properties/{pid}")
@@ -2480,6 +2485,7 @@ async def sync_youtube_api(full: bool = False) -> dict:
     _sync_running = True
     stats: dict = {"ok": True, "new": 0, "updated": 0, "pages": 0, "new_titles": [], "full": full}
     try:
+        had_videos = await db.videos.count_documents({}) > 0
         playlist = await youtube_uploads_playlist()
         try:  # how many public videos does the channel have? (1 quota unit) - lets us verify we imported all of them
             channel_total = int((await yt_get("channels", {"part": "statistics", "id": "UC" + playlist[2:]}))["items"][0]["statistics"]["videoCount"])
@@ -2530,6 +2536,8 @@ async def sync_youtube_api(full: bool = False) -> dict:
             names = ", ".join(stats["new_titles"][:3])
             await notify_admin("video", f"{stats['new']} new YouTube video{'s' if stats['new'] != 1 else ''} synced",
                                names if stats["new"] <= 3 else f"{names} and more. Add price/location in Admin > Videos.", link="/admin/videos")
+            if had_videos and stats["new"] <= 3:
+                spawn(auto_push("New video tour", stats["new_titles"][0], "/videos", "new-video"))
         return stats
     except Exception as e:
         logging.warning(f"YouTube sync failed: {type(e).__name__}: {e}")
@@ -2570,6 +2578,7 @@ async def sync_youtube_rss() -> dict:
     _sync_running = True
     stats: dict = {"ok": True, "new": 0, "updated": 0, "pages": 1, "new_titles": [], "full": False, "source": "rss"}
     try:
+        had_videos = await db.videos.count_documents({}) > 0
         cid = await youtube_channel_id()
         root = ET.fromstring(await rss_get(f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"))
         ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015", "m": "http://search.yahoo.com/mrss/"}
@@ -2593,6 +2602,8 @@ async def sync_youtube_rss() -> dict:
         if stats["new"]:
             await notify_admin("video", f"{stats['new']} new YouTube video{'s' if stats['new'] != 1 else ''} synced",
                                ", ".join(stats["new_titles"][:3]), link="/admin/videos")
+            if had_videos and stats["new"] <= 3:
+                spawn(auto_push("New video tour", stats["new_titles"][0], "/videos", "new-video"))
         return stats
     except Exception as e:
         logging.warning(f"YouTube feed sync failed: {type(e).__name__}: {e}")
@@ -2760,6 +2771,146 @@ async def share_video(video_id: str):
     bits = [b for b in (v.get("zone"), f"{v['bedrooms']} BHK" if v.get("bedrooms") else None) if b]
     return share_page(f"{v['title']} | Urbanex Realty", " · ".join(bits) or (v.get("description") or "Property video tour by Urbanex Realty")[:150],
                       v.get("thumbnail") or "", f"{PUBLIC_SITE_URL}/videos/{video_id}")
+
+
+# =============== Web Push notifications (installable app + browser alerts) ===============
+VAPID_PUBLIC_ENV = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_ENV = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', f"mailto:{(ALERT_EMAILS or ['admin@example.com'])[0]}")
+
+def _b64url(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+async def vapid_keys() -> dict:
+    """The server's push identity. Set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY in .env to keep it stable;
+    otherwise a pair is generated once and kept in the database (changing it would orphan every subscriber)."""
+    if VAPID_PUBLIC_ENV and VAPID_PRIVATE_ENV:
+        return {"public": VAPID_PUBLIC_ENV, "private": VAPID_PRIVATE_ENV}
+    doc = await db.settings.find_one({"_id": "vapid"}, {"_id": 0})
+    if doc and doc.get("public") and doc.get("private"):
+        return doc
+    from cryptography.hazmat.primitives import serialization as ser
+    from py_vapid import Vapid
+    v = Vapid()
+    v.generate_keys()
+    keys = {"public": _b64url(v.public_key.public_bytes(ser.Encoding.X962, ser.PublicFormat.UncompressedPoint)),
+            "private": _b64url(v.private_key.private_numbers().private_value.to_bytes(32, "big"))}
+    await db.settings.update_one({"_id": "vapid"}, {"$set": keys}, upsert=True)
+    logging.warning("Generated new VAPID keys and saved them in the database. Copy them into .env (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) to make them permanent.")
+    return keys
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(min_length=10, max_length=200)
+    auth: str = Field(min_length=6, max_length=100)
+
+class PushSubscription(BaseModel):
+    endpoint: str = Field(min_length=20, max_length=1000, pattern=r"^https://\S+$")
+    keys: PushKeys
+
+class PushSubscribeIn(BaseModel):
+    subscription: PushSubscription
+
+class PushUnsubscribeIn(BaseModel):
+    endpoint: str = Field(min_length=20, max_length=1000)
+
+class PushSendIn(BaseModel):
+    title: str = Field(min_length=1, max_length=80)
+    body: str = Field(min_length=1, max_length=300)
+    url: str = Field(default="/", max_length=500, pattern=r"^/\S*$")  # a page of this site
+    image: Optional[str] = Field(default=None, max_length=600, pattern=r"^https?://\S+$")
+    test: bool = False  # only deliver to the signed-in admin's own devices
+
+class PushAutoIn(BaseModel):
+    auto: bool
+
+@api.get("/push/key")
+async def push_key():
+    return {"public_key": (await vapid_keys())["public"]}
+
+@api.post("/push/subscribe")
+async def push_subscribe(payload: PushSubscribeIn, request: Request):
+    rate_limit(request, "push", 20)
+    user = await get_current_user(request)
+    sub = payload.subscription
+    now = now_utc().isoformat()
+    await db.push_subs.update_one(
+        {"endpoint": sub.endpoint},
+        {"$set": {"p256dh": sub.keys.p256dh, "auth": sub.keys.auth, "device_id": device_id_of(request),
+                  "user_id": user["user_id"] if user else None, "last_seen_at": now},
+         "$setOnInsert": {"id": new_id("push_"), "created_at": now}}, upsert=True)
+    return {"ok": True}
+
+@api.post("/push/unsubscribe")
+async def push_unsubscribe(payload: PushUnsubscribeIn):
+    await db.push_subs.delete_one({"endpoint": payload.endpoint})
+    return {"ok": True}
+
+async def push_one(sub: dict, data: str, keys: dict) -> str:
+    """Deliver one notification. Returns 'ok', 'gone' (subscription expired: remove it) or 'fail'. Isolated for tests."""
+    from pywebpush import WebPushException, webpush
+    info = {"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}}
+    try:
+        await asyncio.to_thread(webpush, subscription_info=info, data=data, vapid_private_key=keys["private"],
+                                vapid_claims={"sub": VAPID_SUBJECT}, ttl=86400)
+        return "ok"
+    except WebPushException as e:
+        code = getattr(getattr(e, "response", None), "status_code", None)
+        return "gone" if code in (404, 410) else "fail"
+    except Exception as e:
+        logging.warning(f"Push delivery failed: {type(e).__name__}")
+        return "fail"
+
+async def send_push(title: str, body: str, url: str = "/", image: Optional[str] = None, only_user: Optional[str] = None,
+                    tag: Optional[str] = None) -> dict:
+    keys = await vapid_keys()
+    data = json.dumps({"title": title[:80], "body": body[:300], "url": url, "image": image, "tag": tag}, ensure_ascii=False)
+    subs = await db.push_subs.find({"user_id": only_user} if only_user else {}, {"_id": 0}).to_list(50000)
+    sem = asyncio.Semaphore(20)
+
+    async def one(s):
+        async with sem:
+            return s["endpoint"], await push_one(s, data, keys)
+
+    results = await asyncio.gather(*(one(s) for s in subs))
+    gone = [e for e, r in results if r == "gone"]
+    if gone:
+        await db.push_subs.delete_many({"endpoint": {"$in": gone}})
+    out = {"subscribers": len(subs), "sent": sum(1 for _, r in results if r == "ok"),
+           "failed": sum(1 for _, r in results if r == "fail"), "removed": len(gone)}
+    await db.push_log.insert_one({"id": new_id("pl_"), "title": title[:80], "body": body[:300], "url": url, **out,
+                                  "test": bool(only_user), "created_at": now_utc().isoformat()})
+    return out
+
+async def push_auto_enabled() -> bool:
+    doc = await db.settings.find_one({"_id": "push"}) or {}
+    return doc.get("auto", True)
+
+async def auto_push(title: str, body: str, url: str, tag: str):
+    """Automatic alerts (new video / new listing). Never lets a failure reach the caller."""
+    try:
+        if await push_auto_enabled() and await db.push_subs.estimated_document_count():
+            await send_push(title, body, url, tag=tag)
+    except Exception as e:
+        logging.warning(f"Auto push failed: {type(e).__name__}: {e}")
+
+@api.get("/admin/push")
+async def admin_push(request: Request):
+    await require_admin(request)
+    log = await db.push_log.find({}, {"_id": 0}).sort("created_at", -1).limit(15).to_list(15)
+    return {"subscribers": await db.push_subs.count_documents({}), "auto": await push_auto_enabled(), "recent": log,
+            "vapid_in_env": bool(VAPID_PUBLIC_ENV and VAPID_PRIVATE_ENV)}
+
+@api.put("/admin/push/auto")
+async def admin_push_auto(payload: PushAutoIn, request: Request):
+    await require_admin(request)
+    await db.settings.update_one({"_id": "push"}, {"$set": {"auto": payload.auto}}, upsert=True)
+    return {"ok": True, "auto": payload.auto}
+
+@api.post("/admin/push/send")
+async def admin_push_send(payload: PushSendIn, request: Request):
+    user = await require_admin(request)
+    return await send_push(payload.title, payload.body, payload.url, payload.image,
+                           only_user=user["user_id"] if payload.test else None)
 
 
 # ---------- Include ----------

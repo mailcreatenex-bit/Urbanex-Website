@@ -73,6 +73,14 @@ export const en = {
   "videos.browseAll": "Browse all videos", "nav.videos": "Videos",
   "social.eyebrow": "Follow along", "social.title": "Latest from Urbanex on social media", "social.follow": "Follow", "social.noVideos": "New videos will appear here.",
   "social.threadsBody": "Short updates and thoughts from Ayan. Threads does not offer an embeddable feed, so open the profile to read the latest posts.", "social.threadsBtn": "Open on Threads",
+
+  "pwa.installTitle": "Install the Urbanex app", "pwa.installBody": "One tap from your home screen: tours, listings and alerts.", "pwa.install": "Install",
+  "pwa.installApp": "Install app", "pwa.alertsTurnOn": "Get alerts", "pwa.alertsTurnOff": "Alerts on (turn off)",
+  "pwa.iosIntro": "Add Urbanex to your iPhone home screen in two taps:", "pwa.iosStep1": "Tap the Share button in Safari's toolbar", "pwa.iosStep2": "Choose “Add to Home Screen”, then Add",
+  "pwa.manualIntro": "Your browser did not offer a one-tap install.", "pwa.manualSteps": "Open your browser menu and choose “Install Urbanex” or “Add to Home screen”. In Chrome and Edge there is also an install icon in the address bar.",
+  "pwa.iosPush": "On iPhone, install the app to your home screen first, then turn on alerts from inside the app.", "pwa.noPush": "This browser does not support push alerts.",
+  "pwa.noWorker": "Alerts are available once the site is installed or running in its live version.", "pwa.blocked": "Notifications are blocked. Allow them in your browser's site settings to get alerts.",
+  "pwa.alertsOn": "Alerts are on: we will tell you about new video tours and listings.", "pwa.alertsOff": "Alerts turned off.", "pwa.pushFailed": "Could not turn on alerts. Please try again.",
   "latest.eyebrow": "Fresh from our YouTube channel", "latest.title": "Our latest video tours",
 };
 
@@ -136,5 +144,13 @@ export const bn = {
   "videos.browseAll": "সব ভিডিও দেখুন", "nav.videos": "ভিডিও",
   "social.eyebrow": "সঙ্গে থাকুন", "social.title": "সোশ্যাল মিডিয়ায় আরবানেক্সের সর্বশেষ", "social.follow": "ফলো", "social.noVideos": "নতুন ভিডিও এখানে আসবে।",
   "social.threadsBody": "আয়নের ছোট আপডেট ও ভাবনা। থ্রেডস এমবেড ফিড দেয় না, তাই সর্বশেষ পোস্ট পড়তে প্রোফাইল খুলুন।", "social.threadsBtn": "থ্রেডসে খুলুন",
+
+  "pwa.installTitle": "আরবানেক্স অ্যাপ ইনস্টল করুন", "pwa.installBody": "হোম স্ক্রিন থেকে এক ট্যাপে: ট্যুর, তালিকা ও অ্যালার্ট।", "pwa.install": "ইনস্টল",
+  "pwa.installApp": "অ্যাপ ইনস্টল", "pwa.alertsTurnOn": "অ্যালার্ট চালু করুন", "pwa.alertsTurnOff": "অ্যালার্ট চালু (বন্ধ করুন)",
+  "pwa.iosIntro": "দুই ট্যাপে আইফোনের হোম স্ক্রিনে আরবানেক্স যোগ করুন:", "pwa.iosStep1": "সাফারির টুলবারে শেয়ার বোতাম চাপুন", "pwa.iosStep2": "“Add to Home Screen” বেছে নিন, তারপর Add",
+  "pwa.manualIntro": "আপনার ব্রাউজার এক ট্যাপে ইনস্টলের সুযোগ দেয়নি।", "pwa.manualSteps": "ব্রাউজারের মেনু খুলে “Install Urbanex” বা “Add to Home screen” বেছে নিন। ক্রোম ও এজে ঠিকানা বারেও একটি ইনস্টল আইকন থাকে।",
+  "pwa.iosPush": "আইফোনে আগে অ্যাপটি হোম স্ক্রিনে ইনস্টল করুন, তারপর অ্যাপের ভেতর থেকে অ্যালার্ট চালু করুন।", "pwa.noPush": "এই ব্রাউজার পুশ অ্যালার্ট সমর্থন করে না।",
+  "pwa.noWorker": "সাইট ইনস্টল করা থাকলে বা লাইভ সংস্করণে অ্যালার্ট পাওয়া যাবে।", "pwa.blocked": "নোটিফিকেশন বন্ধ আছে। অ্যালার্ট পেতে ব্রাউজারের সাইট সেটিংসে অনুমতি দিন।",
+  "pwa.alertsOn": "অ্যালার্ট চালু: নতুন ভিডিও ট্যুর ও তালিকার খবর জানানো হবে।", "pwa.alertsOff": "অ্যালার্ট বন্ধ হয়েছে।", "pwa.pushFailed": "অ্যালার্ট চালু করা যায়নি। আবার চেষ্টা করুন।",
   "latest.eyebrow": "আমাদের ইউটিউব চ্যানেল থেকে সদ্য", "latest.title": "আমাদের সর্বশেষ ভিডিও ট্যুর",
 };
