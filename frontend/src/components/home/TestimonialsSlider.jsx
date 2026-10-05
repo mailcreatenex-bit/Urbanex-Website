@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
-import { TESTIMONIALS } from "@/constants/seedData";
 
 export default function TestimonialsSlider() {
   const [i, setI] = useState(0);
   const [real, setReal] = useState([]);
-  // Approved customer reviews replace the sample testimonials as soon as there are any.
+  // Only real, approved customer reviews are shown; the section stays hidden until there are some.
   useEffect(() => {
     api.get("/reviews").then(r => setReal((r.data.items || []).map(x => ({
       name: x.name, role: "★".repeat(x.rating) + " · Signed-in customer", quote: x.text, avatar: null,
     })))).catch(() => {});
   }, []);
-  const list = real.length ? real : TESTIMONIALS;
-  const idx = i % list.length;
+  const list = real;
+  const idx = list.length ? i % list.length : 0;
   const t = list[idx];
+  if (!list.length) return null;
   const prev = () => setI((idx - 1 + list.length) % list.length);
   const next = () => setI((idx + 1) % list.length);
 

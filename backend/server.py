@@ -550,8 +550,24 @@ async def backfill_properties():
         if upd:
             await db.properties.update_one({"id": d["id"]}, {"$set": upd})
 
+async def purge_demo_properties():
+    """One-time clean-up: remove the sample listings that older versions seeded (matched by their exact seed title and image),
+    so only real inventory remains. Anything the admin created or retitled is never touched."""
+    if await db.settings.find_one({"_id": "demo_purged"}):
+        return
+    titles = [p["title"] for p in SEED_PROPERTIES]
+    ids = [d["id"] async for d in db.properties.find({"title": {"$in": titles}, "image": {"$in": PROP_IMGS}}, {"id": 1, "_id": 0})]
+    if ids:
+        await db.properties.delete_many({"id": {"$in": ids}})
+        await db.watchlist.delete_many({"property_id": {"$in": ids}})
+        logging.info("Removed %d demo properties", len(ids))
+    await db.settings.update_one({"_id": "demo_purged"}, {"$set": {"at": now_utc().isoformat(), "removed": len(ids)}}, upsert=True)
+
 async def ensure_seed():
-    # Seed only an empty collection; never delete existing inventory.
+    # Sample listings are opt-in (SEED_DEMO_DATA=1, for local demos only); a real site starts empty.
+    if os.environ.get("SEED_DEMO_DATA") != "1":
+        await purge_demo_properties()
+        return
     if await db.properties.estimated_document_count() > 0:
         return
     docs = []

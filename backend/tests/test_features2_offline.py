@@ -14,7 +14,7 @@ import pytest
 mongomock_motor = pytest.importorskip("mongomock_motor")
 from fastapi.testclient import TestClient  # noqa: E402
 
-os.environ.update(
+os.environ.update(SEED_DEMO_DATA="1", 
     MONGO_URL="mongodb://offline", DB_NAME="offline_test2", CORS_ORIGINS="http://localhost:3000",
     ADMIN_EMAILS="admin@example.com", YOUTUBE_API_KEY="", YOUTUBE_PUBLIC_FEED="0", SMTP_HOST="", ALERT_WEBHOOK_URL="",
     UPLOAD_DIR=tempfile.mkdtemp(prefix="urbx-test-uploads-"),
