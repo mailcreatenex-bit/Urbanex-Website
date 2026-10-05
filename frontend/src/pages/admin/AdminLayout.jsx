@@ -1,7 +1,8 @@
 import { Outlet, NavLink, useNavigate, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { LayoutDashboard, Users, BarChart3, FileText, LogOut, ArrowLeft } from "lucide-react";
+import { Users, BarChart3, FileText, LogOut, ArrowLeft, Building2, CalendarCheck, Star, BookOpen, Mail, Youtube, HandHeart } from "lucide-react";
+import NotificationBell from "@/components/common/NotificationBell";
 import { ADMIN } from "@/constants/testIds";
 
 export default function AdminLayout() {
@@ -14,6 +15,13 @@ export default function AdminLayout() {
 
   const items = [
     { to: "/admin/leads", label: "Leads", icon: Users, tid: ADMIN.navLeads },
+    { to: "/admin/interests", label: "Interested", icon: HandHeart, tid: "admin-nav-interests" },
+    { to: "/admin/videos", label: "Videos", icon: Youtube, tid: "admin-nav-videos" },
+    { to: "/admin/visits", label: "Visits", icon: CalendarCheck, tid: "admin-nav-visits" },
+    { to: "/admin/properties", label: "Properties", icon: Building2, tid: "admin-nav-properties" },
+    { to: "/admin/reviews", label: "Reviews", icon: Star, tid: "admin-nav-reviews" },
+    { to: "/admin/posts", label: "Guides", icon: BookOpen, tid: "admin-nav-posts" },
+    { to: "/admin/digest", label: "Digest", icon: Mail, tid: "admin-nav-digest" },
     { to: "/admin/reports", label: "Reports", icon: BarChart3, tid: ADMIN.navReports },
     { to: "/admin/invoices", label: "Invoices", icon: FileText, tid: ADMIN.navInvoices },
   ];
@@ -28,6 +36,7 @@ export default function AdminLayout() {
             <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">Ayan Dey</div>
           </div>
         </button>
+        <div className="-mt-6 mb-6 flex justify-end"><NotificationBell mode="admin" dark/></div>
 
         <nav className="flex-1 space-y-1">
           {items.map(it => (
@@ -55,10 +64,10 @@ export default function AdminLayout() {
 
       {/* Mobile top bar */}
       <div className="lg:hidden bg-urbanex-navy text-urbanex-ivory p-4 flex items-center justify-between">
-        <div className="font-display text-lg">Urbanex CRM</div>
-        <div className="flex gap-3 text-xs">
+        <div className="flex items-center gap-2"><div className="font-display text-lg">Urbanex CRM</div><NotificationBell mode="admin" dark/></div>
+        <div className="flex gap-2 text-xs overflow-x-auto max-w-[60%]">
           {items.map(it => (
-            <NavLink key={it.to} to={it.to} className={({isActive}) => `px-3 py-1.5 rounded-full ${isActive ? "bg-urbanex-gold text-urbanex-navy" : "bg-white/5"}`}>{it.label}</NavLink>
+            <NavLink key={it.to} to={it.to} className={({isActive}) => `px-3 py-1.5 rounded-full whitespace-nowrap ${isActive ? "bg-urbanex-gold text-urbanex-navy" : "bg-white/5"}`}>{it.label}</NavLink>
           ))}
         </div>
       </div>

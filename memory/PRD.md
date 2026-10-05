@@ -7,7 +7,7 @@ Continuation plan: light-luxury real estate site for Urbanex Realty (Burdwan, WB
 - **Frontend:** React 19 + CRA/Craco, Tailwind + shadcn/ui, framer-motion, Recharts, jsPDF, react-fast-marquee.
 - **Backend:** FastAPI + Motor (async Mongo). Endpoints under `/api`.
 - **DB:** MongoDB. Collections: `properties`, `leads`, `users`, `user_sessions`, `invoices`, `videos_cache`.
-- **Integrations:** Emergent Google Auth (session_id ➜ backend exchange ➜ 7-day httpOnly cookie). Emergent LLM Key (`sk-emergent-885Ac7804EdC2EdA17`) for OpenAI Whisper + semantic search via emergentintegrations. YouTube Data API v3 (key in env).
+- **Integrations:** Emergent Google Auth (session_id ➜ backend exchange ➜ 7-day httpOnly cookie). Emergent LLM Key (`EMERGENT_LLM_KEY` env var) for OpenAI Whisper + semantic search via emergentintegrations. YouTube Data API v3 (key in env).
 
 ## Core requirements (static)
 - 12 seeded Burdwan properties (auto-seeded on startup).

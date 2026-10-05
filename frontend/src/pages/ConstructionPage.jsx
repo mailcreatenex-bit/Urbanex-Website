@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import { CONSTRUCTION_STEPS, CONSTRUCTION_HIGHLIGHTS, CONSTR_VIDEO } from "@/constants/seedData";
 import { CONSTR } from "@/constants/testIds";
 import { api } from "@/lib/api";
+import Turnstile, { TURNSTILE_ENABLED } from "@/components/common/Turnstile";
+import { checkPhone, apiError } from "@/lib/phone";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,25 +16,29 @@ export default function ConstructionPage() {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
   const [form, setForm] = useState({ name: "", phone: "", plot: "", budget: "" });
   const [busy, setBusy] = useState(false);
+  const [ts, setTs] = useState("");
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.phone) { toast.error("Name and phone are required."); return; }
+    const ph = checkPhone(form.phone);
+    if (!ph.ok) { toast.error(ph.error); return; }
     setBusy(true);
     try {
       await api.post("/leads", {
+        turnstile_token: ts || undefined,
         name: form.name,
-        phone: form.phone,
+        phone: ph.value,
         source_page: "construction",
         property_interest: `Construction · Plot: ${form.plot} · Budget: ${form.budget}`,
         message: `Contract construction enquiry`,
       });
       toast.success("Enquiry received. Ayan will call within 24 hours.");
       setForm({ name: "", phone: "", plot: "", budget: "" });
-    } catch {
-      toast.error("Couldn't submit — please WhatsApp Ayan directly.");
-    } finally { setBusy(false); }
+    } catch (err) {
+      toast.error(apiError(err, "Couldn't submit — please WhatsApp Ayan directly."));
+    } finally { setBusy(false); setTs(""); }
   };
 
   return (
@@ -108,7 +114,8 @@ export default function ConstructionPage() {
               <Input data-testid={CONSTR.phone} placeholder="Phone / WhatsApp" value={form.phone} onChange={set("phone")} className="h-12 bg-white border-urbanex-navy/10 rounded-lg"/>
               <Input data-testid={CONSTR.plot} placeholder="Plot size (sqft) & zone" value={form.plot} onChange={set("plot")} className="h-12 bg-white border-urbanex-navy/10 rounded-lg"/>
               <Input data-testid={CONSTR.budget} placeholder="Rough budget (₹)" value={form.budget} onChange={set("budget")} className="h-12 bg-white border-urbanex-navy/10 rounded-lg"/>
-              <Button data-testid={CONSTR.submit} disabled={busy} type="submit" className="w-full h-12 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full font-medium">
+              <Turnstile value={ts} onChange={setTs}/>
+              <Button data-testid={CONSTR.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="w-full h-12 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full font-medium">
                 {busy ? "Sending…" : "Request estimate"} <ArrowRight className="w-4 h-4 ml-1"/>
               </Button>
             </form>

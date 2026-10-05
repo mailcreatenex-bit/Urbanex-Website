@@ -167,7 +167,7 @@ export default function LeadsPage() {
                   onClick={() => setSelected(l)}
                   className="border-urbanex-navy/5 cursor-pointer hover:bg-urbanex-cream/40">
                   <TableCell>
-                    <div className="font-medium text-urbanex-navy">{l.name}</div>
+                    <div className="font-medium text-urbanex-navy">{l.name}{l.flags?.length > 0 && <span title={l.flags.join(", ")} className="ml-2 text-[10px] bg-amber-100 text-amber-800 rounded-full px-2 py-0.5 cursor-help" data-testid="flag-badge">⚠ check</span>}</div>
                     <div className="text-xs text-urbanex-navy/50 font-mono">{l.id.slice(0,12)}…</div>
                   </TableCell>
                   <TableCell className="text-sm text-urbanex-navy/70">

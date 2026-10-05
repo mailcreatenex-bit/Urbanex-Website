@@ -1,13 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { TESTIMONIALS } from "@/constants/seedData";
 
 export default function TestimonialsSlider() {
   const [i, setI] = useState(0);
-  const t = TESTIMONIALS[i];
-  const prev = () => setI((i - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
-  const next = () => setI((i + 1) % TESTIMONIALS.length);
+  const [real, setReal] = useState([]);
+  // Approved customer reviews replace the sample testimonials as soon as there are any.
+  useEffect(() => {
+    api.get("/reviews").then(r => setReal((r.data.items || []).map(x => ({
+      name: x.name, role: "★".repeat(x.rating) + " · Signed-in customer", quote: x.text, avatar: null,
+    })))).catch(() => {});
+  }, []);
+  const list = real.length ? real : TESTIMONIALS;
+  const idx = i % list.length;
+  const t = list[idx];
+  const prev = () => setI((idx - 1 + list.length) % list.length);
+  const next = () => setI((idx + 1) % list.length);
 
   return (
     <section className="max-w-7xl mx-auto px-6 md:px-12 py-24">
@@ -20,12 +30,12 @@ export default function TestimonialsSlider() {
           <div className="mt-8 flex items-center gap-2">
             <button data-testid="testimonial-prev" onClick={prev} className="w-10 h-10 rounded-full border border-urbanex-navy/20 hover:border-urbanex-gold flex items-center justify-center transition-colors"><ChevronLeft className="w-4 h-4"/></button>
             <button data-testid="testimonial-next" onClick={next} className="w-10 h-10 rounded-full border border-urbanex-navy/20 hover:border-urbanex-gold flex items-center justify-center transition-colors"><ChevronRight className="w-4 h-4"/></button>
-            <div className="ml-4 text-xs text-urbanex-navy/50 font-mono">{i + 1} / {TESTIMONIALS.length}</div>
+            <div className="ml-4 text-xs text-urbanex-navy/50 font-mono">{idx + 1} / {list.length}</div>
           </div>
         </div>
         <div className="md:col-span-8 relative">
           <AnimatePresence mode="wait">
-            <motion.div key={i}
+            <motion.div key={idx}
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
               className="relative bg-white rounded-3xl p-10 md:p-14 border border-urbanex-navy/5 shadow-[0_20px_60px_-30px_rgba(10,18,37,0.2)]">
@@ -34,7 +44,7 @@ export default function TestimonialsSlider() {
                 {t.quote}
               </p>
               <div className="mt-8 flex items-center gap-4">
-                <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-urbanex-gold/40"/>
+                {t.avatar ? <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-urbanex-gold/40"/> : <div className="w-12 h-12 rounded-full bg-urbanex-gold/20 flex items-center justify-center text-urbanex-navy font-medium">{t.name[0]}</div>}
                 <div>
                   <div className="text-urbanex-navy font-medium">{t.name}</div>
                   <div className="text-sm text-urbanex-navy/60">{t.role}</div>

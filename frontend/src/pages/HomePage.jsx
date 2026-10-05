@@ -7,8 +7,10 @@ import PromoBand from "@/components/home/PromoBand";
 import ZonesMarquee from "@/components/home/ZonesMarquee";
 import TestimonialsSlider from "@/components/home/TestimonialsSlider";
 import VideoShowcase from "@/components/home/VideoShowcase";
+import HomeCtas from "@/components/home/HomeCtas";
 import PropertyCard from "@/components/properties/PropertyCard";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const PILLARS = [
   { icon: Sparkles, title: "Hand-picked", body: "Only 12 properties on the site — because we won't list what we wouldn't buy ourselves." },
@@ -19,9 +21,13 @@ const PILLARS = [
 
 export default function HomePage() {
   const [props, setProps] = useState([]);
+  const { user, loading } = useAuth();
+  const uid = user?.user_id;
+  // Refetch on sign-in/out: prices only come back for authenticated users.
   useEffect(() => {
+    if (loading) return;
     api.get("/properties").then(r => setProps((r.data || []).slice(0, 6))).catch(() => {});
-  }, []);
+  }, [uid, loading]);
 
   return (
     <div>
@@ -53,6 +59,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <HomeCtas/>
 
       <ZonesMarquee/>
 

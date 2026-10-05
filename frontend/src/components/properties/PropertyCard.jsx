@@ -1,15 +1,18 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Lock, MapPin, BedDouble, Bath, Ruler, ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { MapPin, BedDouble, Bath, Ruler, ArrowRight, Heart, ShieldCheck, GitCompareArrows } from "lucide-react";
+import { useFavorites, MAX_COMPARE } from "@/context/FavoritesContext";
+import { useI18n } from "@/context/I18nContext";
+import PriceBlock from "@/components/common/PriceBlock";
 import { PROP } from "@/constants/testIds";
-
-const inr = (n) =>
-  n >= 10000000 ? `₹${(n / 10000000).toFixed(2)} Cr` : `₹${(n / 100000).toFixed(2)} L`;
+import { assetUrl } from "@/lib/config";
 
 export default function PropertyCard({ property, idx = 0 }) {
-  const { user, setLoginOpen } = useAuth();
-  const isLoggedIn = !!user;
+  const { has, toggle, compare, toggleCompare } = useFavorites();
+  const { t } = useI18n();
+  const saved = has(property.id);
+  const comparing = compare.includes(property.id);
+  const href = `/properties/${property.slug || property.id}`;
 
   return (
     <motion.div
@@ -21,27 +24,48 @@ export default function PropertyCard({ property, idx = 0 }) {
       className="group bg-white rounded-2xl overflow-hidden border border-urbanex-navy/5 hover:border-urbanex-gold/40 shadow-[0_4px_20px_-4px_rgba(10,18,37,0.05)] hover:shadow-[0_20px_50px_-20px_rgba(10,18,37,0.18)] transition-all duration-500"
     >
       <div className="relative aspect-[5/4] overflow-hidden">
-        <img
-          src={property.image}
-          alt={property.title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-        />
-        <div className="absolute top-4 left-4 flex gap-2">
+        <Link to={href} aria-label={property.title}>
+          <img
+            src={assetUrl(property.image)}
+            alt={property.title}
+            loading="lazy"
+            decoding="async"
+            width="800"
+            height="640"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          />
+        </Link>
+        <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-16">
           <span className="text-[10px] tracking-[0.24em] uppercase bg-urbanex-navy/85 text-urbanex-ivory px-3 py-1 rounded-full backdrop-blur">
-            {property.property_type}
+            {t(`type.${property.property_type}`)}
           </span>
           {property.status !== "available" && (
             <span className="text-[10px] tracking-[0.24em] uppercase bg-urbanex-gold text-urbanex-navy px-3 py-1 rounded-full">
-              {property.status}
+              {t(`status.${property.status}`)}
+            </span>
+          )}
+          {property.verified && (
+            <span className="text-[10px] tracking-[0.2em] uppercase bg-emerald-600/90 text-white px-3 py-1 rounded-full inline-flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3"/> {t("card.verified")}
             </span>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => toggle(property.id)}
+          aria-pressed={saved}
+          aria-label={t("card.shortlist")}
+          data-testid={`prop-heart-${property.id}`}
+          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:scale-105 transition-transform"
+        >
+          <Heart className={`w-5 h-5 ${saved ? "fill-red-500 text-red-500" : "text-urbanex-navy"}`}/>
+        </button>
       </div>
 
       <div className="p-6">
         <div className="flex items-center gap-2 text-xs text-urbanex-navy/60">
           <MapPin className="w-3.5 h-3.5 text-urbanex-gold"/> {property.zone}
+          {property.rera_number && <span className="ml-auto font-mono text-[10px] text-urbanex-navy/50">{t("card.rera")} {property.rera_number}</span>}
         </div>
         <h3 className="mt-2 font-display text-2xl text-urbanex-navy leading-snug line-clamp-2">{property.title}</h3>
 
@@ -51,34 +75,27 @@ export default function PropertyCard({ property, idx = 0 }) {
           <span className="flex items-center gap-1"><Ruler className="w-4 h-4 text-urbanex-gold"/> {property.area_sqft} sqft</span>
         </div>
 
-        <div className="mt-6 flex items-end justify-between">
-          {isLoggedIn ? (
-            <div>
-              <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">Ask price</div>
-              <div data-testid={PROP.price(property.id)} className="font-display text-3xl text-urbanex-navy">{inr(property.price_inr)}</div>
-            </div>
-          ) : (
-            <button
-              data-testid={PROP.gate(property.id)}
-              onClick={() => setLoginOpen(true)}
-              className="relative overflow-hidden text-left"
-            >
-              <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">Ask price</div>
-              <div className="relative">
-                <span className="font-display text-3xl text-urbanex-navy blur-[6px] select-none">{inr(property.price_inr)}</span>
-                <span className="absolute inset-0 flex items-center gap-1.5 text-sm text-urbanex-navy/80 hover:text-urbanex-navy" data-testid={PROP.seePriceBtn(property.id)}>
-                  <Lock className="w-3.5 h-3.5 text-urbanex-gold"/> Sign in to see price
-                </span>
-              </div>
-            </button>
-          )}
+        <div className="mt-6 flex items-end justify-between gap-3">
+          <PriceBlock type="property" item={property} testId={PROP.price(property.id)}/>
           <Link
-            to={`/properties/${property.id}`}
-            className="text-sm text-urbanex-navy/70 hover:text-urbanex-gold flex items-center gap-1 group/link"
+            to={href}
+            className="text-sm text-urbanex-navy/70 hover:text-urbanex-gold flex items-center gap-1 group/link shrink-0"
           >
-            Details <ArrowRight className="w-4 h-4 transition-transform group-hover/link:translate-x-1"/>
+            {t("card.details")} <ArrowRight className="w-4 h-4 transition-transform group-hover/link:translate-x-1"/>
           </Link>
         </div>
+
+        <label className={`mt-4 pt-4 border-t border-urbanex-navy/10 flex items-center gap-2 text-xs cursor-pointer select-none ${!comparing && compare.length >= MAX_COMPARE ? "opacity-40 cursor-not-allowed" : "text-urbanex-navy/70"}`}>
+          <input
+            type="checkbox"
+            checked={comparing}
+            disabled={!comparing && compare.length >= MAX_COMPARE}
+            onChange={() => toggleCompare(property.id)}
+            data-testid={`prop-compare-${property.id}`}
+            className="accent-[#C5A059]"
+          />
+          <GitCompareArrows className="w-3.5 h-3.5 text-urbanex-gold"/> {t("card.compare")}
+        </label>
       </div>
     </motion.div>
   );

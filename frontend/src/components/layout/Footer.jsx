@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import DigestSignup from "@/components/common/DigestSignup";
 import { Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
 
 export default function Footer() {
@@ -24,6 +25,10 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-urbanex-ivory/80">
             <li><Link to="/properties" className="hover:text-urbanex-gold">Properties</Link></li>
             <li><Link to="/construction" className="hover:text-urbanex-gold">Contract Construction</Link></li>
+            <li><Link to="/zone-quiz" className="hover:text-urbanex-gold">Find your zone</Link></li>
+            <li><Link to="/nri" className="hover:text-urbanex-gold">NRI desk</Link></li>
+            <li><Link to="/blog" className="hover:text-urbanex-gold">Area guides</Link></li>
+            <li><Link to="/shortlist" className="hover:text-urbanex-gold">Your shortlist</Link></li>
             <li><Link to="/about" className="hover:text-urbanex-gold">About Ayan</Link></li>
             <li><Link to="/contact" className="hover:text-urbanex-gold">Contact</Link></li>
             <li><Link to="/terms" className="hover:text-urbanex-gold">Terms</Link></li>
@@ -43,6 +48,10 @@ export default function Footer() {
             <a href="https://www.youtube.com/@urbanexbyayandey" target="_blank" rel="noreferrer" className="text-urbanex-ivory/60 hover:text-urbanex-gold"><Youtube className="w-5 h-5"/></a>
           </div>
         </div>
+      </div>
+
+      <div className="border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-10"><DigestSignup dark/></div>
       </div>
 
       <div className="border-t border-white/10">

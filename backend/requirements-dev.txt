@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8.0.0
+pytest-xdist>=3.6.0
+requests>=2.31.0
+ruff>=0.5.0
+mongomock-motor>=0.0.30

@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { waLink } from "@/lib/config";
+import Turnstile, { TURNSTILE_ENABLED } from "@/components/common/Turnstile";
+import { checkPhone, apiError } from "@/lib/phone";
 import { toast } from "sonner";
 import { Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import { CONTACT } from "@/constants/testIds";
@@ -11,6 +14,7 @@ import { Button } from "@/components/ui/button";
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", phone: "", email: "", property_interest: "", message: "" });
   const [busy, setBusy] = useState(false);
+  const [ts, setTs] = useState("");
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -20,15 +24,22 @@ export default function ContactPage() {
       toast.error("Please share your name and phone or email.");
       return;
     }
+    let phoneValue = null;
+    if (form.phone.trim()) {
+      const ph = checkPhone(form.phone);
+      if (!ph.ok) { toast.error(ph.error); return; }
+      phoneValue = ph.value;
+    }
     setBusy(true);
     try {
-      await api.post("/leads", { ...form, source_page: "contact" });
+      await api.post("/leads", { ...form, phone: phoneValue, email: form.email.trim() || null, source_page: "contact", turnstile_token: ts || undefined });
       toast.success("Thanks — Ayan will reach out within 24 hours.");
       setForm({ name: "", phone: "", email: "", property_interest: "", message: "" });
-    } catch {
-      toast.error("Couldn't submit right now. Please WhatsApp Ayan directly.");
+    } catch (err) {
+      toast.error(apiError(err, "Couldn't submit right now. Please WhatsApp Ayan directly."));
     } finally {
       setBusy(false);
+      setTs("");
     }
   };
 
@@ -64,7 +75,8 @@ export default function ContactPage() {
             <label className="text-xs tracking-[0.24em] uppercase text-urbanex-navy/60">Message</label>
             <Textarea data-testid={CONTACT.message} value={form.message} onChange={set("message")} rows={5} placeholder="Tell us your budget, timeline and any specifics." className="mt-2 bg-urbanex-cream border-urbanex-navy/10 rounded-lg"/>
           </div>
-          <Button data-testid={CONTACT.submit} disabled={busy} type="submit" className="mt-8 bg-urbanex-navy hover:bg-urbanex-navyLight text-urbanex-ivory rounded-full h-12 px-8">
+          <div className="mt-6"><Turnstile value={ts} onChange={setTs}/></div>
+          <Button data-testid={CONTACT.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="mt-8 bg-urbanex-navy hover:bg-urbanex-navyLight text-urbanex-ivory rounded-full h-12 px-8">
             {busy ? "Sending…" : "Request a callback"}
           </Button>
 
@@ -91,7 +103,7 @@ export default function ContactPage() {
               <p className="text-urbanex-ivory/80 leading-relaxed text-sm">{FOUNDER_BIO}</p>
               <a
                 data-testid={CONTACT.whatsapp}
-                href={`https://wa.me/919933333333?text=${encodeURIComponent("Hi Ayan, I found Urbanex online and wanted to talk directly.")}`}
+                href={waLink("Hi Ayan, I found Urbanex online and wanted to talk directly.")}
                 target="_blank" rel="noreferrer"
                 className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy py-3 rounded-full text-sm font-medium transition-colors"
               >

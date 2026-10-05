@@ -1,22 +1,30 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, Heart } from "lucide-react";
+import NotificationBell from "@/components/common/NotificationBell";
+import { useFavorites } from "@/context/FavoritesContext";
+import { useI18n } from "@/context/I18nContext";
 import { useAuth } from "@/context/AuthContext";
 import { NAV } from "@/constants/testIds";
 import { Button } from "@/components/ui/button";
 
-const links = [
-  { to: "/", label: "Home", tid: NAV.home },
-  { to: "/properties", label: "Properties", tid: NAV.properties },
-  { to: "/construction", label: "Construction", tid: NAV.construction },
-  { to: "/about", label: "About", tid: NAV.about },
-  { to: "/contact", label: "Contact", tid: NAV.contact },
+const LINKS = [
+  { to: "/", key: "nav.home", tid: NAV.home },
+  { to: "/properties", key: "nav.properties", tid: NAV.properties },
+  { to: "/videos", key: "nav.videos", tid: "nav-videos" },
+  { to: "/construction", key: "nav.construction", tid: NAV.construction },
+  { to: "/about", key: "nav.about", tid: NAV.about },
+  { to: "/contact", key: "nav.contact", tid: NAV.contact },
 ];
 
 export default function Navbar() {
   const { user, logout, setLoginOpen } = useAuth();
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
+  const { t, lang, setLang } = useI18n();
+  const { ids } = useFavorites();
+  const links = LINKS.map(l => ({ ...l, label: t(l.key) }));
+  const toggleLang = () => setLang(lang === "en" ? "bn" : "en");
 
   return (
     <header className="sticky top-0 z-40 bg-urbanex-ivory/90 backdrop-blur-xl border-b border-urbanex-navy/10">
@@ -43,12 +51,18 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
+          <button type="button" onClick={toggleLang} data-testid="lang-toggle" className="text-xs border border-urbanex-navy/20 hover:border-urbanex-gold rounded-full px-3 py-1.5 text-urbanex-navy/80">{t("lang.toggle")}</button>
+          <Link to="/shortlist" aria-label={t("nav.shortlist")} data-testid="nav-shortlist" className="relative p-2 text-urbanex-navy hover:text-urbanex-gold">
+            <Heart className="w-5 h-5"/>
+            {ids.length > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-urbanex-gold text-urbanex-navy text-[10px] flex items-center justify-center">{ids.length}</span>}
+          </Link>
+          {user && !user.is_admin && <NotificationBell mode="user"/>}
           {user ? (
             <>
               <span data-testid={NAV.user} className="text-sm text-urbanex-navy/70 max-w-[140px] truncate">{user.name}</span>
               {user.is_admin && (
                 <Button variant="outline" size="sm" data-testid={NAV.admin} onClick={() => nav("/admin/leads")} className="border-urbanex-gold text-urbanex-navy hover:bg-urbanex-gold/10">
-                  <LayoutDashboard className="w-4 h-4 mr-1"/> CRM
+                  <LayoutDashboard className="w-4 h-4 mr-1"/> {t("nav.crm")}
                 </Button>
               )}
               <Button variant="ghost" size="sm" data-testid={NAV.logout} onClick={logout} className="text-urbanex-navy hover:bg-urbanex-navy/5">
@@ -58,7 +72,7 @@ export default function Navbar() {
           ) : (
             <Button data-testid={NAV.login} onClick={() => setLoginOpen(true)}
               className="bg-urbanex-navy hover:bg-urbanex-navyLight text-urbanex-ivory rounded-full px-5">
-              Sign in
+              {t("nav.signin")}
             </Button>
           )}
         </div>
@@ -76,6 +90,10 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
+          <div className="flex items-center gap-4 text-sm">
+            <Link to="/shortlist" onClick={() => setOpen(false)} className="inline-flex items-center gap-1.5 text-urbanex-navy/80"><Heart className="w-4 h-4"/> {t("nav.shortlist")} ({ids.length})</Link>
+            <button type="button" onClick={toggleLang} className="text-urbanex-navy/80 underline">{t("lang.toggle")}</button>
+          </div>
           <div className="pt-3 border-t border-urbanex-navy/10">
             {user ? (
               <div className="flex items-center justify-between">

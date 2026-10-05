@@ -1,0 +1,60 @@
+import { useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { assetUrl } from "@/lib/config";
+
+async function upload(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const { data } = await api.post("/admin/uploads", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  return data.url;
+}
+
+// value: string (single) or string[] (multiple). Accepts a pasted URL or an uploaded file.
+export default function ImageUpload({ label, value, onChange, multiple = false }) {
+  const input = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const list = multiple ? (value || []) : (value ? [value] : []);
+
+  const onFiles = async (files) => {
+    setBusy(true);
+    try {
+      const urls = [];
+      for (const f of files) urls.push(await upload(f));
+      onChange(multiple ? [...list, ...urls] : urls[0]);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Upload failed");
+    } finally { setBusy(false); if (input.current) input.current.value = ""; }
+  };
+  const remove = (u) => onChange(multiple ? list.filter(x => x !== u) : "");
+
+  return (
+    <div>
+      <div className="text-xs text-gray-500 mb-1">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {list.map(u => (
+          <div key={u} className="relative w-20 h-16 rounded-lg overflow-hidden border">
+            <img src={assetUrl(u)} alt="" className="w-full h-full object-cover"/>
+            <button type="button" onClick={() => remove(u)} aria-label="Remove image" className="absolute top-0.5 right-0.5 bg-white/90 rounded-full p-0.5"><X className="w-3 h-3"/></button>
+          </div>
+        ))}
+        {(multiple || !list.length) && (
+          <button type="button" disabled={busy} onClick={() => input.current?.click()}
+            className="w-20 h-16 rounded-lg border border-dashed flex items-center justify-center text-gray-500 hover:border-urbanex-gold disabled:opacity-50">
+            <ImagePlus className="w-5 h-5"/>
+          </button>
+        )}
+      </div>
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" multiple={multiple} hidden
+        onChange={(e) => e.target.files?.length && onFiles([...e.target.files])}/>
+      <input type="url" placeholder="…or paste an image URL and press Enter" className="mt-2 w-full border rounded-lg px-3 py-1.5 text-xs"
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          const v = e.currentTarget.value.trim();
+          if (/^https?:\/\//.test(v)) { onChange(multiple ? [...list, v] : v); e.currentTarget.value = ""; }
+        }}/>
+    </div>
+  );
+}

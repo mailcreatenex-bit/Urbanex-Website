@@ -1,12 +1,12 @@
 import { MessageCircle } from "lucide-react";
 import { WHATSAPP } from "@/constants/testIds";
+import { waLink } from "@/lib/config";
 
 export default function FloatingWhatsApp() {
-  const number = "919933333333";
-  const msg = encodeURIComponent("Hi Ayan, I found Urbanex Realty online and would like to explore properties in Burdwan.");
+  const href = waLink("Hi Ayan, I found Urbanex Realty online and would like to explore properties in Burdwan.");
   return (
     <a
-      href={`https://wa.me/${number}?text=${msg}`}
+      href={href}
       target="_blank"
       rel="noreferrer"
       data-testid={WHATSAPP.floating}

@@ -11,13 +11,13 @@ Covers:
 """
 import os
 import re
-import time
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://ayan-dey-realty.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
 API = f"{BASE_URL}/api"
-ADMIN_TOKEN = "adm_test_token_123"
+# Session token of an admin user in YOUR dev database (never commit it).
+ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN")
 
 
 @pytest.fixture(scope="session")
@@ -29,6 +29,8 @@ def s():
 
 @pytest.fixture(scope="session")
 def admin_s(s):
+    if not ADMIN_TOKEN:
+        pytest.skip("TEST_ADMIN_TOKEN not set")
     sess = requests.Session()
     sess.headers.update({
         "Content-Type": "application/json",
@@ -62,8 +64,9 @@ class TestPublicContent:
         assert isinstance(data, list)
         assert len(data) >= 12, f"expected >=12 properties, got {len(data)}"
         p = data[0]
-        for k in ["id", "title", "zone", "price_inr", "image", "gallery"]:
+        for k in ["id", "title", "zone", "image", "gallery"]:
             assert k in p, f"property missing key {k}"
+        assert "price_inr" not in p, "price must be withheld from anonymous users"
         assert isinstance(p["gallery"], list) and len(p["gallery"]) >= 1
 
     def test_property_by_id(self, s):
@@ -72,6 +75,14 @@ class TestPublicContent:
         r = s.get(f"{API}/properties/{pid}")
         assert r.status_code == 200
         assert r.json()["id"] == pid
+
+    def test_property_price_gated_publicly(self, s):
+        pid = s.get(f"{API}/properties").json()[0]["id"]
+        assert "price_inr" not in s.get(f"{API}/properties/{pid}").json()
+
+    def test_property_price_visible_to_user(self, admin_s):
+        items = admin_s.get(f"{API}/properties").json()
+        assert all("price_inr" in p for p in items)
 
     def test_property_not_found(self, s):
         r = s.get(f"{API}/properties/does_not_exist_xyz")
@@ -88,10 +99,9 @@ class TestPublicContent:
         assert r.status_code == 200
         vids = r.json()
         assert isinstance(vids, list)
-        assert len(vids) >= 1, "expected at least one video (yt or fallback)"
-        v = vids[0]
-        for k in ["video_id", "title", "thumbnail"]:
-            assert k in v
+        for v in vids:  # may be empty when no YouTube key is configured
+            for k in ["video_id", "title", "thumbnail"]:
+                assert k in v
 
 
 # ---------------- Auth ----------------
@@ -104,7 +114,6 @@ class TestAuth:
         r = admin_s.get(f"{API}/auth/me")
         assert r.status_code == 200, r.text
         data = r.json()
-        assert data["email"] == "ayan@urbanex.com"
         assert data["is_admin"] is True
 
     def test_session_missing_id(self, s):
@@ -113,13 +122,23 @@ class TestAuth:
 
 
 # ---------------- Public lead ----------------
+class TestLeadValidation:
+    def test_rejects_bad_phone(self, s):
+        r = s.post(f"{API}/leads", json={"name": "TEST_x", "phone": "<script>"})
+        assert r.status_code == 422
+
+    def test_rejects_oversized_message(self, s):
+        r = s.post(f"{API}/leads", json={"name": "TEST_x", "message": "a" * 5000})
+        assert r.status_code == 422
+
+
 class TestLeadCreation:
     _created_id = None
 
     def test_create_lead(self, s):
         payload = {
             "name": "TEST_Prospect",
-            "phone": "9999900001",
+            "phone": "9831033445",
             "email": "TEST_prospect@example.com",
             "source_page": "contact",
             "property_interest": "Kalibazar Boutique Villa",
