@@ -1,6 +1,20 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import DigestSignup from "@/components/common/DigestSignup";
 import { Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+
+// "Crafted by" credit: the Cre8nex logo (public/brand/cre8nex-logo.png). If the file is missing it falls back to the plain text.
+function Cre8nexMark() {
+  const [missing, setMissing] = useState(false);
+  return (
+    <a href="https://cre8nex.com" target="_blank" rel="noreferrer" aria-label="Cre8nex" data-testid="cre8nex-credit"
+      className="inline-flex items-center opacity-90 hover:opacity-100 transition-opacity">
+      {missing
+        ? <span className="font-mono tracking-widest text-urbanex-gold hover:text-urbanex-goldHover">CRE8NEX</span>
+        : <img src="/brand/cre8nex-logo.png" alt="Cre8nex" height="28" loading="lazy" decoding="async" onError={() => setMissing(true)} className="h-7 w-auto object-contain"/>}
+    </a>
+  );
+}
 
 export default function Footer() {
   return (
@@ -59,7 +73,7 @@ export default function Footer() {
           <div>© {new Date().getFullYear()} Urbanex Realty. All rights reserved.</div>
           <div className="flex items-center gap-2">
             <span>Crafted by</span>
-            <a href="https://cre8nex.com" target="_blank" rel="noreferrer" className="font-mono tracking-widest text-urbanex-gold hover:text-urbanex-goldHover">CRE8NEX</a>
+            <Cre8nexMark/>
           </div>
         </div>
       </div>
