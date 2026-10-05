@@ -49,9 +49,10 @@ export const FOUNDER_BIO =
 
 // Placeholder images for founder (until user uploads)
 export const FOUNDER_IMAGES = {
-  hilltop: "https://images.unsplash.com/photo-1589386417686-0d34b5903d23?w=1200",
-  blazer: "https://images.unsplash.com/photo-1659353220482-554773c2f7fa?w=1200",
-  office: "https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?w=1200",
+  // Ayan's own photos (resized, ~120-160 KB each)
+  hilltop: "/brand/ayan-lake.jpg",
+  blazer: "/brand/ayan-site.jpg",
+  office: "/brand/ayan-site.jpg",
   promoBand: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600",
 };
 

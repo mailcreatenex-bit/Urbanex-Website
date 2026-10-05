@@ -21,7 +21,7 @@ export default function AboutPage() {
             initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}
             className="md:col-span-5 relative">
             <div className="relative rounded-3xl overflow-hidden aspect-[4/5] border-2 border-urbanex-gold/40 shadow-[0_30px_80px_-40px_rgba(10,18,37,0.4)]">
-              <img src={FOUNDER_IMAGES.hilltop} alt="Ayan Dey" loading="lazy" className="w-full h-full object-cover"/>
+              <img src={FOUNDER_IMAGES.hilltop} alt="Ayan Dey" width="825" height="1100" decoding="async" className="w-full h-full object-cover object-[50%_28%]"/>
             </div>
             <div className="absolute -bottom-6 -right-4 md:-right-8 bg-urbanex-navy text-urbanex-ivory px-5 py-3 rounded-xl">
               <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">Since</div>
@@ -53,7 +53,7 @@ export default function AboutPage() {
         <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-6 text-center">Leadership</div>
         <div className="max-w-4xl mx-auto bg-white rounded-3xl border border-urbanex-navy/10 overflow-hidden grid md:grid-cols-2">
           <div className="aspect-square md:aspect-auto">
-            <img src={FOUNDER_IMAGES.blazer} alt="Ayan Dey — Founder" loading="lazy" className="w-full h-full object-cover"/>
+            <img src={FOUNDER_IMAGES.blazer} alt="Ayan Dey — Founder" width="1100" height="1094" loading="lazy" decoding="async" className="w-full h-full object-cover object-[50%_30%]"/>
           </div>
           <div className="p-8 md:p-10 flex flex-col justify-center">
             <div className="text-xs tracking-[0.28em] uppercase text-urbanex-gold">Founder & Principal Advisor</div>

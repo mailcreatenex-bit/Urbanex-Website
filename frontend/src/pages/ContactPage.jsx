@@ -91,7 +91,7 @@ export default function ContactPage() {
         <aside className="md:col-span-5">
           <div className="bg-urbanex-navy rounded-3xl overflow-hidden text-urbanex-ivory">
             <div className="aspect-[4/5] relative">
-              <img src={FOUNDER_IMAGES.office} alt="Ayan Dey — Meet the founder" className="w-full h-full object-cover"/>
+              <img src={FOUNDER_IMAGES.office} alt="Ayan Dey — Meet the founder" width="1100" height="1094" decoding="async" className="w-full h-full object-cover object-[50%_30%]"/>
               <div className="absolute inset-0 bg-gradient-to-t from-urbanex-navy via-urbanex-navy/40 to-transparent"/>
               <div className="absolute bottom-6 left-6 right-6">
                 <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold mb-2">Meet the founder</div>
