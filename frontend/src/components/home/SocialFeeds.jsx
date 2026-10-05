@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Facebook, Instagram, Youtube } from "lucide-react";
+import { ArrowUpRight, Facebook, Instagram } from "lucide-react";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/config";
 import { SOCIAL, facebookEmbed, instagramEmbed } from "@/lib/social";
-import { ThreadsIcon } from "@/components/common/SocialIcons";
+import { ThreadsIcon, YouTubeLogo } from "@/components/common/SocialIcons";
 import { useI18n } from "@/context/I18nContext";
 
 // The third-party frames are only created once the section scrolls into view, so they cost nothing on first load.
@@ -24,12 +24,12 @@ function LazyFrame({ src, title, height }) {
   );
 }
 
-function Window({ icon: Icon, tint, p, children, testid }) {
+function Window({ icon: Icon, tint, logo, p, children, testid }) {
   const { t } = useI18n();
   return (
     <article className="bg-white rounded-3xl border border-urbanex-navy/10 shadow-[0_10px_40px_-25px_rgba(10,18,37,0.3)] overflow-hidden flex flex-col" data-testid={testid}>
       <header className="flex items-center gap-3 px-5 py-4 border-b border-urbanex-navy/10">
-        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-white ${tint}`}><Icon className="w-[18px] h-[18px]"/></span>
+        {logo || <span className={`w-9 h-9 rounded-full flex items-center justify-center text-white ${tint}`}><Icon className="w-[18px] h-[18px]"/></span>}
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-urbanex-navy">{p.name}</div>
           <div className="text-xs text-urbanex-navy/50 truncate">{p.handle}</div>
@@ -61,12 +61,12 @@ export default function SocialFeeds() {
         <Window icon={Instagram} tint="bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF]" p={SOCIAL.instagram} testid="feed-instagram">
           <LazyFrame src={instagramEmbed} title="Urbanex on Instagram" height={420}/>
         </Window>
-        <Window icon={Youtube} tint="bg-[#FF0000]" p={SOCIAL.youtube} testid="feed-youtube">
+        <Window logo={<YouTubeLogo className="w-9 h-[26px]"/>} p={SOCIAL.youtube} testid="feed-youtube">
           <div className="space-y-3">
             {videos.length === 0 && <div className="text-sm text-urbanex-navy/50 py-10 text-center">{t("social.noVideos")}</div>}
             {videos.map(v => (
               <Link key={v.video_id} to={`/videos/${v.video_id}`} className="group flex gap-3 items-center rounded-xl hover:bg-urbanex-cream/60 p-1.5 -m-1.5 transition-colors">
-                <img src={assetUrl(v.thumbnail)} alt="" loading="lazy" className="w-28 aspect-video object-cover rounded-lg shrink-0"/>
+                <img src={assetUrl(v.thumbnail)} alt="" loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; }} className="w-28 aspect-video object-cover rounded-lg shrink-0"/>
                 <div className="min-w-0">
                   <div className="text-sm text-urbanex-navy leading-snug line-clamp-2 group-hover:text-urbanex-gold transition-colors">{v.title}</div>
                   <div className="text-[11px] text-urbanex-navy/45 mt-1">{(v.published_at || "").slice(0, 10)}</div>

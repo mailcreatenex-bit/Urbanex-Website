@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 os.environ.update(
     MONGO_URL="mongodb://offline", DB_NAME="offline_test3", CORS_ORIGINS="http://localhost:3000",
-    ADMIN_EMAILS="admin@example.com", YOUTUBE_API_KEY="", SMTP_HOST="", ALERT_WEBHOOK_URL="",
+    ADMIN_EMAILS="admin@example.com", YOUTUBE_API_KEY="", YOUTUBE_PUBLIC_FEED="0", SMTP_HOST="", ALERT_WEBHOOK_URL="",
     UPLOAD_DIR=tempfile.mkdtemp(prefix="urbx-test-uploads-"),
 )
 import motor.motor_asyncio  # noqa: E402
@@ -211,7 +211,13 @@ def test_deleted_or_private_videos_disappear_after_full_sync_and_admin_edits_sur
 def test_sync_reports_problems_instead_of_crashing(c, monkeypatch):
     assert run(c, server.sync_youtube, False)["ok"] is False or True  # key from fixture may be unset
     monkeypatch.setattr(server, "YOUTUBE_API_KEY", "")
-    assert run(c, server.sync_youtube, False) == {"ok": False, "error": "YOUTUBE_API_KEY is not set"}
+
+    async def feed_down(url):
+        raise RuntimeError("feed unreachable")
+
+    monkeypatch.setattr(server, "rss_get", feed_down)
+    res = run(c, server.sync_youtube, False)                       # no key => public feed, which is also down here
+    assert res["ok"] is False and "feed unreachable" in res["error"]
 
     async def boom(path, params):
         raise RuntimeError("quota exceeded")
@@ -358,3 +364,55 @@ def test_share_page_and_sitemap_include_videos(c, channel):
     assert 'property="og:title"' in share.text and "price" not in share.text.lower()
     assert f"/videos/{v}" in c.get("/api/sitemap.xml").text and "/videos<" in c.get("/api/sitemap.xml").text
     assert c.get("/api/share/videos/nope").status_code == 404
+
+
+# ------------------------------------------------------------------ public-feed fallback (no API key)
+FEED = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+ <entry><id>yt:video:AAAAAAAAAA1</id><yt:videoId>AAAAAAAAAA1</yt:videoId><title>884 sq ft 2BHK Flat For Sale in Goda | Price Rs. 48 Lakh</title>
+  <published>2026-10-05T09:20:00+00:00</published><media:group><media:title>x</media:title><media:description>Call Ayan. Price: 48 lakh</media:description></media:group></entry>
+ <entry><id>yt:video:BBBBBBBBBB2</id><yt:videoId>BBBBBBBBBB2</yt:videoId><title>Plot in Borehat</title>
+  <published>2026-09-01T09:20:00+00:00</published><media:group><media:description></media:description></media:group></entry>
+ <entry><id>yt:video:bad</id><yt:videoId>bad</yt:videoId><title>Ignored: not an 11 character id</title><published>2026-01-01T00:00:00+00:00</published></entry>
+</feed>"""
+
+
+def test_public_feed_fills_the_catalogue_without_an_api_key(c, monkeypatch):
+    seen = []
+
+    async def fake_rss(url):
+        seen.append(url)
+        return FEED
+
+    monkeypatch.setattr(server, "YOUTUBE_API_KEY", "")
+    monkeypatch.setattr(server, "rss_get", fake_rss)
+    c.portal.call(lambda: server.db.videos.delete_many({}))
+    res = run(c, server.sync_youtube, False)
+    assert res["ok"] and res["new"] == 2 and res["source"] == "rss"
+    assert "channel_id=UCwC13G1I6ho3CwuITqo61fQ" in seen[0]          # known channel id, no scraping needed
+    items = listing(c)["items"]
+    assert [i["video_id"] for i in items] == ["AAAAAAAAAA1", "BBBBBBBBBB2"]    # newest first; the malformed id is skipped
+    first = items[0]
+    assert first["zone"] == "Goda" and first["bedrooms"] == 2 and first["area_sqft"] == 884
+    assert "48" not in first["title"] and "lakh" not in first["title"].lower()   # price text stripped from what we show
+    assert first["thumbnail"].endswith("/AAAAAAAAAA1/hq720.jpg")
+    assert "price" not in str(c.get("/api/video-listings").json()).lower()
+    assert run(c, server.sync_youtube, False)["new"] == 0                       # idempotent
+    status = c.get("/api/admin/videos", headers=ADMIN).json()
+    assert status["sync"]["last_source"] == "rss" and status["sync"]["public_feed"] is not None
+
+
+def test_api_failure_falls_back_to_the_public_feed(c, monkeypatch):
+    async def api_down(path, params):
+        raise RuntimeError("quota exceeded")
+
+    async def fake_rss(url):
+        return FEED
+
+    monkeypatch.setattr(server, "YOUTUBE_API_KEY", "k")
+    monkeypatch.setattr(server, "yt_get", api_down)
+    monkeypatch.setattr(server, "rss_get", fake_rss)
+    monkeypatch.setattr(server, "YOUTUBE_PUBLIC_FEED", True)
+    res = run(c, server.sync_youtube, False)
+    assert res["ok"] and res["source"] == "rss" and "quota" in res["api_error"]
+    assert "using the public feed" in c.get("/api/admin/videos", headers=ADMIN).json()["sync"]["last_error"]

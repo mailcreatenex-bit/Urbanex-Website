@@ -55,7 +55,7 @@ export default function VideosAdminPage() {
         </div>
       </div>
 
-      {!sy.configured && <div className="mb-4 rounded-lg bg-amber-50 text-amber-800 text-sm p-3">YOUTUBE_API_KEY is not set in the backend .env, so videos are not being synced.</div>}
+      {!sy.configured && <div className="mb-4 rounded-lg bg-amber-50 text-amber-800 text-sm p-3">No YOUTUBE_API_KEY is set, so only the newest ~15 uploads are read from YouTube's public feed. Add the key in the backend .env to import the whole back catalogue.</div>}
       {sy.last_error && <div className="mb-4 rounded-lg bg-red-50 text-red-700 text-sm p-3">Last sync failed: {sy.last_error}</div>}
       <p className="text-xs text-gray-500 mb-5">New uploads are picked up automatically about every {sy.every_minutes || 10} minutes. Last sync: {when(sy.last_run_at)} · full check: {when(sy.last_full_at)}.
         Details (location, type, bedrooms, area, price) are read from the video title/description; correct them here and your edits are kept.

@@ -9,6 +9,14 @@ export const ThreadsIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
+// The recognisable YouTube play-button mark
+export const YouTubeLogo = ({ className = "w-8 h-6" }) => (
+  <svg viewBox="0 0 28 20" className={className} aria-hidden="true">
+    <rect width="28" height="20" rx="5.6" fill="#FF0000"/>
+    <path d="M11.2 5.6v8.8L19 10z" fill="#fff"/>
+  </svg>
+);
+
 const ICONS = { facebook: Facebook, instagram: Instagram, threads: ThreadsIcon, youtube: Youtube };
 export const SOCIAL_KEYS = ["facebook", "instagram", "youtube", "threads"];
 

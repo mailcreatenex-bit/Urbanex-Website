@@ -6,6 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import re
+import xml.etree.ElementTree as ET
 import hashlib
 import secrets
 import csv
@@ -74,6 +75,9 @@ DIGEST_WEBHOOK_URL = os.environ.get('DIGEST_WEBHOOK_URL', '')
 # YouTube auto-sync: how often to look for new uploads, and an optional channel id (otherwise YOUTUBE_HANDLE is used)
 YOUTUBE_SYNC_MINUTES = int(os.environ.get('YOUTUBE_SYNC_MINUTES', '10'))
 YOUTUBE_CHANNEL_ID = os.environ.get('YOUTUBE_CHANNEL_ID', '')
+# Without an API key (or if the API fails) the newest ~15 uploads are read from YouTube's public RSS feed. Set to 0 to disable.
+YOUTUBE_PUBLIC_FEED = os.environ.get('YOUTUBE_PUBLIC_FEED', '1') != '0'
+KNOWN_CHANNEL_IDS = {"urbanexbyayandey": "UCwC13G1I6ho3CwuITqo61fQ"}
 # Cloudflare Turnstile (free bot check). Leave TURNSTILE_SECRET_KEY empty to switch the check off.
 TURNSTILE_SECRET = os.environ.get('TURNSTILE_SECRET_KEY', '')
 IP_HASH_SALT = os.environ.get('IP_HASH_SALT', 'urbanex')
@@ -2465,7 +2469,7 @@ async def upsert_video(v: dict, zones: List[str], stats: dict):
         stats["updated"] += 1
     await db.videos.update_one({"video_id": vid}, {"$set": upd})
 
-async def sync_youtube(full: bool = False) -> dict:
+async def sync_youtube_api(full: bool = False) -> dict:
     """Pull the channel's uploads into the catalogue. Incremental runs refresh the newest 100 videos;
     a full run walks the whole back catalogue (and hides videos that were deleted or made private)."""
     global _sync_running
@@ -2527,11 +2531,88 @@ async def sync_youtube(full: bool = False) -> dict:
     finally:
         _sync_running = False
 
+async def rss_get(url: str) -> str:
+    async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (UrbanexSync)"}) as hc:
+        r = await hc.get(url)
+    if r.status_code != 200:
+        raise RuntimeError(f"YouTube feed returned {r.status_code}")
+    return r.text
+
+async def youtube_channel_id() -> str:
+    if YOUTUBE_CHANNEL_ID:
+        return YOUTUBE_CHANNEL_ID
+    st = await db.settings.find_one({"_id": "youtube"}) or {}
+    if st.get("channel_id"):
+        return st["channel_id"]
+    handle = YOUTUBE_HANDLE.lstrip("@").lower()
+    cid = KNOWN_CHANNEL_IDS.get(handle)
+    if not cid:  # best effort: read it from the channel page
+        page = await rss_get(f"https://www.youtube.com/@{handle}")
+        m = re.search(r'"channelId":"(UC[A-Za-z0-9_-]{22})"', page) or re.search(r'/channel/(UC[A-Za-z0-9_-]{22})', page)
+        if not m:
+            raise RuntimeError("Could not find the channel id; set YOUTUBE_CHANNEL_ID")
+        cid = m.group(1)
+    await db.settings.update_one({"_id": "youtube"}, {"$set": {"channel_id": cid}}, upsert=True)
+    return cid
+
+async def sync_youtube_rss() -> dict:
+    """Keyless fallback: the channel's public Atom feed lists the newest ~15 uploads (title, date, thumbnail, description)."""
+    global _sync_running
+    if _sync_running:
+        return {"ok": False, "error": "A sync is already running"}
+    _sync_running = True
+    stats: dict = {"ok": True, "new": 0, "updated": 0, "pages": 1, "new_titles": [], "full": False, "source": "rss"}
+    try:
+        cid = await youtube_channel_id()
+        root = ET.fromstring(await rss_get(f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"))
+        ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015", "m": "http://search.yahoo.com/mrss/"}
+        zones = sorted(set(BURDWAN_ZONES) | set(await db.properties.distinct("zone")))
+        for e in root.findall("a:entry", ns):
+            vid = (e.findtext("yt:videoId", default="", namespaces=ns) or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_-]{11}", vid):
+                continue
+            item = {"id": vid, "snippet": {
+                "title": e.findtext("a:title", default="", namespaces=ns),
+                "description": e.findtext("m:group/m:description", default="", namespaces=ns) or "",
+                "publishedAt": e.findtext("a:published", default=None, namespaces=ns),
+                # hq720 is a true 16:9 frame (hqdefault has black bars); the site falls back to mqdefault if it is missing
+                "thumbnails": {"maxres": {"url": f"https://i.ytimg.com/vi/{vid}/hq720.jpg"}}}, "contentDetails": {"duration": ""}}
+            await upsert_video(item, zones, stats)
+        now = now_utc().isoformat()
+        total = await db.videos.count_documents({"missing": {"$ne": True}})
+        await db.settings.update_one({"_id": "youtube"}, {"$set": {"last_run_at": now, "last_ok_at": now, "last_error": None,
+                                                                      "total_visible": total, "last_new": stats["new"], "last_source": "rss"}}, upsert=True)
+        stats["total"] = total
+        if stats["new"]:
+            await notify_admin("video", f"{stats['new']} new YouTube video{'s' if stats['new'] != 1 else ''} synced",
+                               ", ".join(stats["new_titles"][:3]), link="/admin/videos")
+        return stats
+    except Exception as e:
+        logging.warning(f"YouTube feed sync failed: {type(e).__name__}: {e}")
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"[:300], "source": "rss"}
+    finally:
+        _sync_running = False
+
+async def sync_youtube(full: bool = False) -> dict:
+    """API sync when a key is configured (whole back catalogue); otherwise, or if the API fails, the public feed."""
+    if YOUTUBE_API_KEY:
+        res = await sync_youtube_api(full)
+        if res.get("ok") or "already running" in res.get("error", ""):
+            await db.settings.update_one({"_id": "youtube"}, {"$set": {"last_source": "api"}}, upsert=True)
+            return res
+        fb = await sync_youtube_rss() if YOUTUBE_PUBLIC_FEED else {"ok": False, "error": "feed disabled"}
+        if fb.get("ok"):
+            fb["api_error"] = res["error"]
+            await db.settings.update_one({"_id": "youtube"}, {"$set": {"last_error": f"API failed, using the public feed: {res['error']}"[:300]}}, upsert=True)
+            return fb
+        return {"ok": False, "error": f"{res['error']} (public feed also failed: {fb.get('error')})"[:400]}
+    return await sync_youtube_rss()
+
 async def youtube_loop():
     """New uploads appear within YOUTUBE_SYNC_MINUTES; the back catalogue is re-checked daily."""
     while True:
         try:
-            if YOUTUBE_API_KEY:
+            if YOUTUBE_API_KEY or YOUTUBE_PUBLIC_FEED:
                 st = await db.settings.find_one({"_id": "youtube"}) or {}
                 last_full = parse_dt(st["last_full_at"]) if st.get("last_full_at") else None
                 full = last_full is None or last_full < now_utc() - timedelta(hours=24)
@@ -2628,7 +2709,7 @@ async def admin_videos(request: Request, limit: int = Query(2000, ge=1, le=5000)
     items = await db.videos.find({}, {"_id": 0, "raw_description": 0}).sort("published_at", -1).limit(limit).to_list(limit)
     visible = [v for v in items if not v.get("missing")]
     st = await db.settings.find_one({"_id": "youtube"}, {"_id": 0, "uploads_playlist": 0}) or {}
-    return {"items": items, "sync": {**st, "configured": bool(YOUTUBE_API_KEY), "every_minutes": YOUTUBE_SYNC_MINUTES},
+    return {"items": items, "sync": {**st, "configured": bool(YOUTUBE_API_KEY), "public_feed": YOUTUBE_PUBLIC_FEED, "every_minutes": YOUTUBE_SYNC_MINUTES},
             "counts": {"total": len(items), "visible": len([v for v in visible if not v.get("hidden")]),
                        "missing_price": len([v for v in visible if not v.get("price_inr")]),
                        "missing_zone": len([v for v in visible if not v.get("zone")])}}

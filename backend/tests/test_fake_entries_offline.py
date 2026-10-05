@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 os.environ.update(
     MONGO_URL="mongodb://offline", DB_NAME="offline_test4", CORS_ORIGINS="http://localhost:3000",
-    ADMIN_EMAILS="admin@example.com", YOUTUBE_API_KEY="", SMTP_HOST="", ALERT_WEBHOOK_URL="", TURNSTILE_SECRET_KEY="",
+    ADMIN_EMAILS="admin@example.com", YOUTUBE_API_KEY="", YOUTUBE_PUBLIC_FEED="0", SMTP_HOST="", ALERT_WEBHOOK_URL="", TURNSTILE_SECRET_KEY="",
     UPLOAD_DIR=tempfile.mkdtemp(prefix="urbx-test-uploads-"),
 )
 import motor.motor_asyncio  # noqa: E402
