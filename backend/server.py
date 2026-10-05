@@ -2481,6 +2481,10 @@ async def sync_youtube_api(full: bool = False) -> dict:
     stats: dict = {"ok": True, "new": 0, "updated": 0, "pages": 0, "new_titles": [], "full": full}
     try:
         playlist = await youtube_uploads_playlist()
+        try:  # how many public videos does the channel have? (1 quota unit) - lets us verify we imported all of them
+            channel_total = int((await yt_get("channels", {"part": "statistics", "id": "UC" + playlist[2:]}))["items"][0]["statistics"]["videoCount"])
+        except Exception:
+            channel_total = None
         zones = sorted(set(BURDWAN_ZONES) | set(await db.properties.distinct("zone")))
         seen: set = set()
         token = None
@@ -2514,7 +2518,10 @@ async def sync_youtube_api(full: bool = False) -> dict:
             await db.videos.update_many({"video_id": {"$nin": list(seen)}}, {"$set": {"missing": True}})
         now = now_utc().isoformat()
         total = await db.videos.count_documents({"missing": {"$ne": True}})
-        st = {"last_run_at": now, "last_ok_at": now, "last_error": None, "total_visible": total, "last_new": stats["new"]}
+        st = {"last_run_at": now, "last_ok_at": now, "last_error": None, "total_visible": total, "last_new": stats["new"],
+              "channel_video_count": channel_total,
+              # more than a few short of the channel's own count => something was missed; the loop then forces a full re-check
+              "incomplete": bool(channel_total and total < channel_total - 3)}
         if full and finished:
             st["last_full_at"] = now
         await db.settings.update_one({"_id": "youtube"}, {"$set": st}, upsert=True)
@@ -2616,6 +2623,9 @@ async def youtube_loop():
                 st = await db.settings.find_one({"_id": "youtube"}) or {}
                 last_full = parse_dt(st["last_full_at"]) if st.get("last_full_at") else None
                 full = last_full is None or last_full < now_utc() - timedelta(hours=24)
+                # imported fewer videos than the channel has: re-walk the whole catalogue (at most once an hour)
+                if st.get("incomplete") and (last_full is None or last_full < now_utc() - timedelta(hours=1)):
+                    full = True
                 await sync_youtube(full=full)
         except asyncio.CancelledError:
             raise

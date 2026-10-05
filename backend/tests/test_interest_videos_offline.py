@@ -416,3 +416,28 @@ def test_api_failure_falls_back_to_the_public_feed(c, monkeypatch):
     res = run(c, server.sync_youtube, False)
     assert res["ok"] and res["source"] == "rss" and "quota" in res["api_error"]
     assert "using the public feed" in c.get("/api/admin/videos", headers=ADMIN).json()["sync"]["last_error"]
+
+
+def test_incomplete_import_is_detected_and_forces_a_full_pass(c, channel, monkeypatch):
+    """If the channel reports more videos than we hold, the sync flags it and the next pass re-walks everything."""
+    base = fake_yt_get
+
+    async def with_stats(path, params):
+        if path == "channels" and params.get("part") == "statistics":
+            return {"items": [{"statistics": {"videoCount": "500"}}]}   # the channel claims 500; we only have ~129
+        return await base(path, params)
+
+    monkeypatch.setattr(server, "yt_get", with_stats)
+    run(c, server.sync_youtube, False)
+    sync = c.get("/api/admin/videos", headers=ADMIN).json()["sync"]
+    assert sync["channel_video_count"] == 500 and sync["incomplete"] is True
+    # a complete import clears the flag
+    async def complete(path, params):
+        if path == "channels" and params.get("part") == "statistics":
+            return {"items": [{"statistics": {"videoCount": "129"}}]}
+        return await base(path, params)
+
+    monkeypatch.setattr(server, "yt_get", complete)
+    run(c, server.sync_youtube, True)
+    sync = c.get("/api/admin/videos", headers=ADMIN).json()["sync"]
+    assert sync["incomplete"] is False and sync["last_full_at"]

@@ -62,7 +62,7 @@ export default function VideosAdminPage() {
         Anything written in a YouTube title or description is public on YouTube itself, so keep prices out of it and set them here.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 text-sm">
-        {[["On the site", data.counts.visible], ["Missing price", data.counts.missing_price], ["Missing location", data.counts.missing_zone], ["All synced", data.counts.total]].map(([k, v]) => (
+        {[["On the site", sy.channel_video_count ? `${data.counts.visible} of ${sy.channel_video_count} on YouTube` : data.counts.visible], ["Missing price", data.counts.missing_price], ["Missing location", data.counts.missing_zone], ["All synced", data.counts.total]].map(([k, v]) => (
           <div key={k} className="bg-white border rounded-xl p-4"><div className="text-xs text-gray-500">{k}</div><div className="text-2xl font-display">{v ?? 0}</div></div>
         ))}
       </div>
