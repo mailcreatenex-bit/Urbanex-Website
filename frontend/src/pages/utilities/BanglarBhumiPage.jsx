@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Copy, ExternalLink, MessageCircle } from "lucide-react";
-import UtilityShell from "@/pages/utilities/UtilityShell";
+import LandShell from "@/pages/utilities/LandShell";
 import { waLink } from "@/lib/config";
 import { useSeo } from "@/lib/seo";
 
@@ -33,7 +33,7 @@ export default function BanglarBhumiPage() {
     f.khatian && `Khatian no: ${f.khatian}`, f.owner && `Owner on record: ${f.owner}`, f.land && `Land type: ${f.land}`].filter(Boolean).join("\n");
 
   return (
-    <UtilityShell title="Banglar Bhumi: check land records" intro="Banglar Bhumi is the West Bengal government's land record website. Check the khatian and plot of any land before you pay a rupee.">
+    <LandShell title="Banglar Bhumi: land records and tools" intro="Check the khatian and plot of any land before you pay a rupee, then use the tools above to measure, convert and price it.">
       <div className="rounded-2xl bg-urbanex-navy text-urbanex-ivory p-6 flex flex-wrap items-center gap-4">
         <div className="flex-1 min-w-[240px]">
           <div className="font-display text-2xl">Official portal</div>
@@ -70,6 +70,6 @@ export default function BanglarBhumiPage() {
         </div>
       </div>
       <p className="mt-8 text-xs text-urbanex-navy/45">Urbanex Realty is not connected to the government portal. Records online can lag behind the ground reality, so always also check the deed and the physical possession, and take legal advice before buying.</p>
-    </UtilityShell>
+    </LandShell>
   );
 }
