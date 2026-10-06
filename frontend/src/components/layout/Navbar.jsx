@@ -64,6 +64,7 @@ export default function Navbar() {
             <Heart className="w-5 h-5"/>
             {ids.length > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-urbanex-gold text-urbanex-navy text-[10px] flex items-center justify-center">{ids.length}</span>}
           </Link>
+          <Link to={user ? "/my-listings" : "/list-your-property"} data-testid="nav-list-property" className="text-xs border border-urbanex-gold text-urbanex-navy hover:bg-urbanex-gold/10 rounded-full px-4 py-1.5 whitespace-nowrap">{user ? t("nav.myListings") : t("nav.listProperty")}</Link>
           {user && !user.is_admin && <NotificationBell mode="user"/>}
           {user ? (
             <>
@@ -100,6 +101,7 @@ export default function Navbar() {
           ))}
           <div className="flex items-center gap-4 text-sm">
             <Link to="/shortlist" onClick={() => setOpen(false)} className="inline-flex items-center gap-1.5 text-urbanex-navy/80"><Heart className="w-4 h-4"/> {t("nav.shortlist")} ({ids.length})</Link>
+            <Link to={user ? "/my-listings" : "/list-your-property"} onClick={() => setOpen(false)} className="text-urbanex-gold">{user ? t("nav.myListings") : t("nav.listProperty")}</Link>
             <button type="button" onClick={toggleLang} className="text-urbanex-navy/80 underline">{t("lang.toggle")}</button>
           </div>
           <div className="pt-3 border-t border-urbanex-navy/10">

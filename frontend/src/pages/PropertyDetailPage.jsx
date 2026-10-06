@@ -110,6 +110,11 @@ export default function PropertyDetailPage() {
                 <ShieldCheck className="w-4 h-4"/> {t("detail.verifiedBadge")}
               </div>
             )}
+            {p.owner_listing && (
+              <div className="mt-4 rounded-xl bg-amber-50 text-amber-900 text-sm px-4 py-3" data-testid="owner-notice">
+                Listed by {p.listed_by || "the owner"}. Urbanex has not verified this listing, so check the documents yourself before paying anything. Press Interested and we will connect you.
+              </div>
+            )}
             <div className="mt-4 flex flex-wrap gap-2 text-xs" data-testid="listing-facts">
               {p.listing_type === "rent" && <span className="bg-sky-50 text-sky-700 rounded-full px-3 py-1">{t("props.forRent")}</span>}
               {p.address && <span className="bg-urbanex-cream rounded-full px-3 py-1">{p.address}</span>}

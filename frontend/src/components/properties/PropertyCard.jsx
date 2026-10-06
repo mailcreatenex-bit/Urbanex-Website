@@ -56,6 +56,9 @@ export default function PropertyCard({ property, idx = 0 }) {
               {t(`status.${property.status}`)}
             </span>
           )}
+          {property.owner_listing && (
+            <span className="text-[10px] tracking-[0.2em] uppercase bg-white/90 text-urbanex-navy/80 px-3 py-1 rounded-full" data-testid="owner-badge">{t("card.byOwner")}</span>
+          )}
           {property.verified && (
             <span className="text-[10px] tracking-[0.2em] uppercase bg-emerald-600/90 text-white px-3 py-1 rounded-full inline-flex items-center gap-1">
               <ShieldCheck className="w-3 h-3"/> {t("card.verified")}

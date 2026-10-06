@@ -43,6 +43,9 @@ const DigestAdminPage = lazy(() => import("@/pages/admin/DigestAdminPage"));
 const VideosAdminPage = lazy(() => import("@/pages/admin/VideosAdminPage"));
 const InterestsAdminPage = lazy(() => import("@/pages/admin/InterestsAdminPage"));
 const PushAdminPage = lazy(() => import("@/pages/admin/PushAdminPage"));
+const ListingsAdminPage = lazy(() => import("@/pages/admin/ListingsAdminPage"));
+const ListPropertyPage = lazy(() => import("@/pages/ListPropertyPage"));
+const MyListingsPage = lazy(() => import("@/pages/MyListingsPage"));
 
 function AppRouter() {
   const location = useLocation();
@@ -68,6 +71,8 @@ function AppRouter() {
         <Route path="/about" element={<AboutPage/>}/>
         <Route path="/contact" element={<ContactPage/>}/>
         <Route path="/construction" element={<ConstructionPage/>}/>
+        <Route path="/list-your-property" element={<ListPropertyPage/>}/>
+        <Route path="/my-listings" element={<MyListingsPage/>}/>
         <Route path="/terms" element={<TermsPage/>}/>
         <Route path="/privacy" element={<PrivacyPage/>}/>
       </Route>
@@ -83,6 +88,7 @@ function AppRouter() {
         <Route path="videos" element={<VideosAdminPage/>}/>
         <Route path="interests" element={<InterestsAdminPage/>}/>
         <Route path="push" element={<PushAdminPage/>}/>
+        <Route path="listings" element={<ListingsAdminPage/>}/>
         <Route path="reports" element={<ReportsPage/>}/>
         <Route path="invoices" element={<InvoicePage/>}/>
       </Route>

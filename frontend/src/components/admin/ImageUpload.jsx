@@ -20,16 +20,16 @@ async function shrink(file) {
   } catch { return file; }
 }
 
-async function upload(original) {
+async function upload(original, endpoint) {
   const file = await shrink(original);
   const fd = new FormData();
   fd.append("file", file);
-  const { data } = await api.post("/admin/uploads", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  const { data } = await api.post(endpoint, fd, { headers: { "Content-Type": "multipart/form-data" } });
   return data.url;
 }
 
 // value: string (single) or string[] (multiple). Accepts a pasted URL or an uploaded file.
-export default function ImageUpload({ label, value, onChange, multiple = false }) {
+export default function ImageUpload({ label, value, onChange, multiple = false, endpoint = "/admin/uploads" }) {
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const list = multiple ? (value || []) : (value ? [value] : []);
@@ -38,7 +38,7 @@ export default function ImageUpload({ label, value, onChange, multiple = false }
     setBusy(true);
     try {
       const urls = [];
-      for (const f of files) urls.push(await upload(f));
+      for (const f of files) urls.push(await upload(f, endpoint));
       onChange(multiple ? [...list, ...urls] : urls[0]);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Upload failed");

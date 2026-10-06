@@ -45,6 +45,7 @@ export default function Footer() {
             <li><Link to="/nri" className="hover:text-urbanex-gold">NRI desk</Link></li>
             <li><Link to="/blog" className="hover:text-urbanex-gold">Area guides</Link></li>
             <li><Link to="/shortlist" className="hover:text-urbanex-gold">Your shortlist</Link></li>
+            <li><Link to="/list-your-property" className="hover:text-urbanex-gold">List your property</Link></li>
             <li><Link to="/about" className="hover:text-urbanex-gold">About Ayan</Link></li>
             <li><Link to="/contact" className="hover:text-urbanex-gold">Contact</Link></li>
             <li><Link to="/terms" className="hover:text-urbanex-gold">Terms</Link></li>
