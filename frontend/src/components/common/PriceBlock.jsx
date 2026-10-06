@@ -21,7 +21,7 @@ export default function PriceBlock({ type, item, size = "card", testId }) {
       <div data-testid={testId || `price-${type}-${id}`}>
         <div className="text-[10px] tracking-[0.28em] uppercase text-urbanex-gold">{t("card.askPrice")}</div>
         {info.price_inr ? (
-          <div className={`font-display ${big} text-urbanex-navy`}>{inr(info.price_inr)}</div>
+          <div className={`font-display ${big} text-urbanex-navy`}>{inr(info.price_inr)}{item?.listing_type === "rent" && <span className="text-sm font-sans text-urbanex-navy/60"> / month</span>}</div>
         ) : (
           <div className="text-sm text-urbanex-navy/70 max-w-[16rem]">{t("interest.onRequest")}</div>
         )}

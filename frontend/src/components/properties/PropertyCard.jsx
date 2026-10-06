@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { MapPin, BedDouble, Bath, Ruler, ArrowRight, Heart, ShieldCheck, GitCompareArrows } from "lucide-react";
+import { MapPin, BedDouble, Bath, Ruler, ArrowRight, Heart, Home, Play, ShieldCheck, GitCompareArrows } from "lucide-react";
 import { useFavorites, MAX_COMPARE } from "@/context/FavoritesContext";
 import { useI18n } from "@/context/I18nContext";
 import PriceBlock from "@/components/common/PriceBlock";
@@ -27,20 +27,30 @@ export default function PropertyCard({ property, idx = 0 }) {
     >
       <div className="relative aspect-[5/4] overflow-hidden">
         <Link to={href} aria-label={property.title}>
-          <img
-            src={assetUrl(property.image, 800)}
-            alt={property.title}
-            loading="lazy"
-            decoding="async"
-            width="800"
-            height="640"
-            className="tilt-depth w-full h-full object-cover"
-          />
+          {property.image ? (
+            <img
+              src={assetUrl(property.image, 800)}
+              alt={property.title}
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="640"
+              className="tilt-depth w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-urbanex-cream to-urbanex-goldMuted/60 flex items-center justify-center"><Home className="w-14 h-14 text-urbanex-navy/25"/></div>
+          )}
         </Link>
         <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-16">
           <span className="text-[10px] tracking-[0.24em] uppercase bg-urbanex-navy/85 text-urbanex-ivory px-3 py-1 rounded-full backdrop-blur">
             {t(`type.${property.property_type}`)}
           </span>
+          {property.listing_type === "rent" && (
+            <span className="text-[10px] tracking-[0.24em] uppercase bg-sky-600 text-white px-3 py-1 rounded-full">{t("props.forRent")}</span>
+          )}
+          {property.video_id && (
+            <span className="text-[10px] tracking-[0.2em] uppercase bg-red-600 text-white px-3 py-1 rounded-full inline-flex items-center gap-1"><Play className="w-3 h-3 fill-white"/> {t("props.video")}</span>
+          )}
           {property.status !== "available" && (
             <span className="text-[10px] tracking-[0.24em] uppercase bg-urbanex-gold text-urbanex-navy px-3 py-1 rounded-full">
               {t(`status.${property.status}`)}

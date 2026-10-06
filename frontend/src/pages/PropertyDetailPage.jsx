@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import YouTubeClip from "@/components/videos/YouTubeClip";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { ArrowLeft, MapPin, MessageCircle, Heart, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
 import { api } from "@/lib/api";
@@ -39,13 +40,13 @@ export default function PropertyDetailPage() {
   useSeo(p ? {
     title: p.title,
     description: `${p.zone}, Burdwan · ${p.area_sqft} sqft${p.bedrooms ? ` · ${p.bedrooms} BHK` : ""}. ${p.description}`.slice(0, 200),
-    image: assetUrl(p.image),
+    image: p.image ? assetUrl(p.image) : undefined,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "RealEstateListing",
       name: p.title,
       description: p.description,
-      image: [p.image, ...(p.gallery || [])].map(assetUrl),
+      image: [p.image, ...(p.gallery || [])].filter(Boolean).map(assetUrl),
       url: window.location.href,
       address: { "@type": "PostalAddress", addressLocality: p.zone, addressRegion: "West Bengal", addressCountry: "IN" },
       ...(p.latitude != null ? { geo: { "@type": "GeoCoordinates", latitude: p.latitude, longitude: p.longitude } } : {}),
@@ -75,14 +76,18 @@ export default function PropertyDetailPage() {
       <div className="grid md:grid-cols-12 gap-10">
         <div className="md:col-span-8">
           {(() => {
-            const shots = [p.image, ...(p.gallery || [])];
+            const shots = [p.image, ...(p.gallery || [])].filter(Boolean);
             return (
               <>
-                <Tilt className="rounded-3xl" max={2.5}>
-                  <div className="rounded-3xl overflow-hidden aspect-[16/10] bg-urbanex-navy/5">
-                    <img key={shot} src={assetUrl(shots[shot] || p.image, 1280)} alt={p.title} className="tilt-depth w-full h-full object-cover animate-in fade-in duration-500" width="1280" height="800"/>
-                  </div>
-                </Tilt>
+                {shots.length > 0 ? (
+                  <Tilt className="rounded-3xl" max={2.5}>
+                    <div className="rounded-3xl overflow-hidden aspect-[16/10] bg-urbanex-navy/5">
+                      <img key={shot} src={assetUrl(shots[shot] || shots[0], 1280)} alt={p.title} className="tilt-depth w-full h-full object-cover animate-in fade-in duration-500" width="1280" height="800"/>
+                    </div>
+                  </Tilt>
+                ) : p.video_id ? null : (
+                  <div className="rounded-3xl aspect-[16/10] bg-gradient-to-br from-urbanex-cream to-urbanex-goldMuted/60"/>
+                )}
                 {shots.length > 1 && (
                   <div className="grid grid-cols-4 gap-3 mt-3">
                     {shots.map((g, i) => (
@@ -105,7 +110,19 @@ export default function PropertyDetailPage() {
                 <ShieldCheck className="w-4 h-4"/> {t("detail.verifiedBadge")}
               </div>
             )}
+            <div className="mt-4 flex flex-wrap gap-2 text-xs" data-testid="listing-facts">
+              {p.listing_type === "rent" && <span className="bg-sky-50 text-sky-700 rounded-full px-3 py-1">{t("props.forRent")}</span>}
+              {p.address && <span className="bg-urbanex-cream rounded-full px-3 py-1">{p.address}</span>}
+              {p.facing && <span className="bg-urbanex-cream rounded-full px-3 py-1 capitalize">{p.facing.replace("_", "-")} facing</span>}
+              {p.floor_info && <span className="bg-urbanex-cream rounded-full px-3 py-1">{p.floor_info}</span>}
+            </div>
             <p className="mt-5 text-urbanex-navy/75 leading-relaxed max-w-2xl">{p.description}</p>
+
+            {p.video_id && (
+              <div className="mt-8 max-w-2xl" data-testid="property-video">
+                <YouTubeClip id={p.video_id} title={p.title} thumbnail={p.image?.startsWith("https://i.ytimg.com/") ? p.image : undefined}/>
+              </div>
+            )}
 
             <div className="mt-8 grid sm:grid-cols-2 gap-4">
               {(p.highlights || []).map(h => (

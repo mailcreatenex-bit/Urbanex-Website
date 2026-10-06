@@ -13,7 +13,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { useI18n } from "@/context/I18nContext";
 import { useSeo } from "@/lib/seo";
 
-const EMPTY = { q: "", zone: "", property_type: "", status: "", min_bedrooms: "", furnishing: "", possession: "",
+const EMPTY = { q: "", listing_type: "", zone: "", property_type: "", status: "", min_bedrooms: "", furnishing: "", possession: "",
   min_area: "", max_area: "", budget: "", sort: "newest" };
 const TYPES = ["apartment", "villa", "plot", "commercial"];
 const sel = "bg-white border border-urbanex-navy/20 rounded-full px-4 py-2 text-sm text-urbanex-navy max-w-full";
@@ -93,6 +93,11 @@ export default function PropertiesPage() {
             className="w-full bg-white border border-urbanex-navy/20 rounded-full pl-11 pr-4 py-2 text-sm"/>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <select aria-label="Buy or rent" value={f.listing_type} onChange={set("listing_type")} className={sel} data-testid="filter-listing">
+            <option value="">{t("props.anyListing")}</option>
+            <option value="sale">{t("props.buy")}</option>
+            <option value="rent">{t("props.rent")}</option>
+          </select>
           <select aria-label="Zone" data-testid={PROP.filterZone} value={f.zone} onChange={set("zone")} className={sel}>
             <option value="">{t("props.allZones")}</option>
             {zones.map(z => <option key={z} value={z}>{z}</option>)}

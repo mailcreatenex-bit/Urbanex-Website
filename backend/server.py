@@ -210,6 +210,24 @@ def check_image_url(v: str) -> str:
 
 ImageUrl = Annotated[str, AfterValidator(check_image_url), Field(max_length=600)]
 
+YT_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+def parse_youtube_id(value: Optional[str]) -> Optional[str]:
+    """Accepts a bare 11-character id or any YouTube link (watch?v=, youtu.be/, shorts/, embed/, live/) and returns the id."""
+    if value is None:
+        return None
+    v = str(value).strip()
+    if not v:
+        return None
+    if YT_ID.match(v):
+        return v
+    m = re.match(r"^(?:https?://)?(?:www\.|m\.|music\.)?(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/)?([A-Za-z0-9_-]{11})(?:[?&#/].*)?$", v)
+    if not m:
+        raise ValueError("That does not look like a YouTube link")
+    return m.group(1)
+
+YouTubeRef = Annotated[Optional[str], AfterValidator(parse_youtube_id)]
+
 async def turnstile_check(token: str, ip: Optional[str]) -> bool:
     async with httpx.AsyncClient(timeout=8) as hc:
         r = await hc.post("https://challenges.cloudflare.com/turnstile/v0/siteverify",
@@ -310,11 +328,16 @@ class Property(BaseModel):
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     area_sqft: int
-    price_inr: int
+    price_inr: Optional[int] = None  # None = price on request
     status: str = "available"  # available | sold | upcoming
     description: str
     highlights: List[str] = []
-    image: str
+    image: str = ""
+    listing_type: str = "sale"  # sale | rent (rent prices are per month)
+    address: Optional[str] = None
+    facing: Optional[str] = None
+    floor_info: Optional[str] = None
+    video_id: Optional[str] = None  # optional YouTube video of this property
     gallery: List[str] = []
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -337,11 +360,16 @@ class PropertyFields(BaseModel):
     bedrooms: Optional[int] = Field(default=None, ge=0, le=20)
     bathrooms: Optional[int] = Field(default=None, ge=0, le=20)
     area_sqft: int = Field(gt=0, le=10_000_000)
-    price_inr: int = Field(gt=0, le=10**11)
+    price_inr: Optional[int] = Field(default=None, gt=0, le=10**11)   # empty = "price on request"
     status: Literal["available", "sold", "upcoming"] = "available"
     description: str = Field(min_length=1, max_length=5000)
     highlights: List[str] = Field(default=[], max_length=20)
-    image: ImageUrl
+    image: Optional[ImageUrl] = None                                  # empty = the YouTube thumbnail, or a placeholder
+    listing_type: Literal["sale", "rent"] = "sale"
+    address: Optional[str] = Field(default=None, max_length=200)
+    facing: Optional[Literal["north", "south", "east", "west", "north_east", "north_west", "south_east", "south_west"]] = None
+    floor_info: Optional[str] = Field(default=None, max_length=60)
+    video_id: YouTubeRef = None
     gallery: List[ImageUrl] = Field(default=[], max_length=20)
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
@@ -365,6 +393,11 @@ class PropertyUpdate(BaseModel):
     description: Optional[str] = Field(default=None, min_length=1, max_length=5000)
     highlights: Optional[List[str]] = Field(default=None, max_length=20)
     image: Optional[ImageUrl] = None
+    listing_type: Optional[Literal["sale", "rent"]] = None
+    address: Optional[str] = Field(default=None, max_length=200)
+    facing: Optional[Literal["north", "south", "east", "west", "north_east", "north_west", "south_east", "south_west"]] = None
+    floor_info: Optional[str] = Field(default=None, max_length=60)
+    video_id: YouTubeRef = None
     gallery: Optional[List[ImageUrl]] = Field(default=None, max_length=20)
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
@@ -640,13 +673,17 @@ async def public_config():
     }
 
 SEARCH_KEYS = {"q", "zone", "property_type", "status", "min_bedrooms", "min_area", "max_area",
-               "furnishing", "possession", "budget"}
+               "furnishing", "possession", "budget", "listing_type"}
 
 def build_property_query(p: dict) -> dict:
     q: dict = {}
     for k in ("zone", "property_type", "status", "furnishing", "possession"):
         if p.get(k):
             q[k] = p[k]
+    if p.get("listing_type") == "rent":
+        q["listing_type"] = "rent"
+    elif p.get("listing_type") == "sale":
+        q["listing_type"] = {"$ne": "rent"}      # older listings have no listing_type and are for sale
     if p.get("q"):
         rx = re.escape(str(p["q"])[:100])
         q["$or"] = [{f: {"$regex": rx, "$options": "i"}} for f in ("title", "zone", "description")]
@@ -679,12 +716,13 @@ async def list_properties(
     min_area: Optional[int] = Query(None, ge=0), max_area: Optional[int] = Query(None, ge=0),
     budget: Optional[Literal["b1", "b2", "b3", "b4", "b5"]] = None,
     furnishing: Optional[str] = None, possession: Optional[str] = None,
+    listing_type: Optional[Literal["sale", "rent"]] = None,
     sort: Literal["newest", "area_asc", "area_desc"] = "newest",
     bbox: Optional[str] = Query(None, description="south,west,north,east"),
 ):
     raw = {"q": q, "zone": zone, "property_type": property_type, "status": status, "min_bedrooms": min_bedrooms,
            "min_area": min_area, "max_area": max_area, "budget": budget,
-           "furnishing": furnishing, "possession": possession}
+           "furnishing": furnishing, "possession": possession, "listing_type": listing_type}
     params = {k: v for k, v in raw.items() if v is not None}
     query = build_property_query(params)
     if bbox:
@@ -1128,10 +1166,16 @@ async def notify_saved_searches(prop: dict):
         if u and u.get("email"):
             await send_email([u["email"]], f"[Urbanex] {title}", f"{prop['title']} ({prop['zone']})\n{PUBLIC_SITE_URL}{link}")
 
+def yt_thumb(video_id: Optional[str]) -> str:
+    """Cover for a listing without photos: the YouTube thumbnail of its video, else empty (the site shows a placeholder)."""
+    return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg" if video_id else ""
+
 @api.post("/admin/properties")
 async def admin_create_property(payload: PropertyFields, request: Request):
     await require_admin(request)
-    prop = Property(**payload.model_dump()).model_dump()
+    data = payload.model_dump()
+    data["image"] = data.get("image") or yt_thumb(data.get("video_id"))
+    prop = Property(**data).model_dump()
     prop["slug"] = await unique_slug(db.properties, prop["title"])
     if prop["latitude"] is None and prop["zone"] in ZONE_COORDS:
         prop["latitude"], prop["longitude"] = ZONE_COORDS[prop["zone"]]
@@ -1148,7 +1192,7 @@ async def admin_update_property(pid: str, patch: PropertyUpdate, request: Reques
     update = patch.model_dump(exclude_unset=True)
     if not update:
         raise HTTPException(400, "Nothing to update")
-    for required in ("title", "zone", "property_type", "area_sqft", "price_inr", "description", "image"):
+    for required in ("title", "zone", "property_type", "area_sqft", "description"):
         if required in update and update[required] is None:
             raise HTTPException(422, f"{required} cannot be empty")
     old = await db.properties.find_one({"id": pid}, {"_id": 0})
@@ -1156,11 +1200,16 @@ async def admin_update_property(pid: str, patch: PropertyUpdate, request: Reques
         raise HTTPException(404, "Property not found")
     if "title" in update and update["title"] != old.get("title"):
         update["slug"] = await unique_slug(db.properties, update["title"], pid)
+    if "image" in update or "video_id" in update:
+        vid = update["video_id"] if "video_id" in update else old.get("video_id")
+        img = update["image"] if "image" in update else old.get("image")
+        if not img or (str(img).startswith("https://i.ytimg.com/") and "video_id" in update):
+            update["image"] = yt_thumb(vid)
     new_price = update.get("price_inr")
     if new_price is not None and new_price != old.get("price_inr"):
         at = now_utc().isoformat()
         update["price_history"] = (old.get("price_history") or []) + [{"price": new_price, "at": at}]
-        if new_price < old.get("price_inr", 0):
+        if old.get("price_inr") and new_price < old["price_inr"]:
             update["price_drop_at"] = at
     await db.properties.update_one({"id": pid}, {"$set": update})
     doc = await db.properties.find_one({"id": pid}, {"_id": 0})
