@@ -44,6 +44,10 @@ const VideosAdminPage = lazy(() => import("@/pages/admin/VideosAdminPage"));
 const InterestsAdminPage = lazy(() => import("@/pages/admin/InterestsAdminPage"));
 const PushAdminPage = lazy(() => import("@/pages/admin/PushAdminPage"));
 const ListingsAdminPage = lazy(() => import("@/pages/admin/ListingsAdminPage"));
+const EmiPage = lazy(() => import("@/pages/utilities/EmiPage"));
+const CompassPage = lazy(() => import("@/pages/utilities/CompassPage"));
+const GyroscopePage = lazy(() => import("@/pages/utilities/GyroscopePage"));
+const BanglarBhumiPage = lazy(() => import("@/pages/utilities/BanglarBhumiPage"));
 const ListPropertyPage = lazy(() => import("@/pages/ListPropertyPage"));
 const MyListingsPage = lazy(() => import("@/pages/MyListingsPage"));
 
@@ -71,6 +75,11 @@ function AppRouter() {
         <Route path="/about" element={<AboutPage/>}/>
         <Route path="/contact" element={<ContactPage/>}/>
         <Route path="/construction" element={<ConstructionPage/>}/>
+        <Route path="/utilities" element={<Navigate to="/utilities/emi" replace/>}/>
+        <Route path="/utilities/emi" element={<EmiPage/>}/>
+        <Route path="/utilities/compass" element={<CompassPage/>}/>
+        <Route path="/utilities/gyroscope" element={<GyroscopePage/>}/>
+        <Route path="/utilities/banglar-bhumi" element={<BanglarBhumiPage/>}/>
         <Route path="/list-your-property" element={<ListPropertyPage/>}/>
         <Route path="/my-listings" element={<MyListingsPage/>}/>
         <Route path="/terms" element={<TermsPage/>}/>

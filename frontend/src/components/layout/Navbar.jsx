@@ -5,6 +5,7 @@ import NotificationBell from "@/components/common/NotificationBell";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useI18n } from "@/context/I18nContext";
 import { useAuth } from "@/context/AuthContext";
+import UtilitiesMenu from "@/components/layout/UtilitiesMenu";
 import { NAV } from "@/constants/testIds";
 import { Button } from "@/components/ui/button";
 
@@ -56,6 +57,7 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
+          <UtilitiesMenu/>
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
@@ -99,6 +101,7 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
+          <UtilitiesMenu mobile onNavigate={() => setOpen(false)}/>
           <div className="flex items-center gap-4 text-sm">
             <Link to="/shortlist" onClick={() => setOpen(false)} className="inline-flex items-center gap-1.5 text-urbanex-navy/80"><Heart className="w-4 h-4"/> {t("nav.shortlist")} ({ids.length})</Link>
             <Link to={user ? "/my-listings" : "/list-your-property"} onClick={() => setOpen(false)} className="text-urbanex-gold">{user ? t("nav.myListings") : t("nav.listProperty")}</Link>
