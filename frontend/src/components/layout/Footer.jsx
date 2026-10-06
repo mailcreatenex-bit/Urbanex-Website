@@ -46,7 +46,7 @@ export default function Footer() {
             <li><Link to="/blog" className="hover:text-urbanex-gold">Area guides</Link></li>
             <li><Link to="/shortlist" className="hover:text-urbanex-gold">Your shortlist</Link></li>
             <li><Link to="/utilities/emi" className="hover:text-urbanex-gold">EMI calculator</Link></li>
-            <li><Link to="/utilities/banglar-bhumi" className="hover:text-urbanex-gold">Banglar Bhumi</Link></li>
+            <li><Link to="/utilities/land-records" className="hover:text-urbanex-gold">Land records</Link></li>
             <li><Link to="/list-your-property" className="hover:text-urbanex-gold">List your property</Link></li>
             <li><Link to="/about" className="hover:text-urbanex-gold">About Ayan</Link></li>
             <li><Link to="/contact" className="hover:text-urbanex-gold">Contact</Link></li>

@@ -83,11 +83,16 @@ function AppRouter() {
         <Route path="/utilities/emi" element={<EmiPage/>}/>
         <Route path="/utilities/compass" element={<CompassPage/>}/>
         <Route path="/utilities/gyroscope" element={<GyroscopePage/>}/>
-        <Route path="/utilities/banglar-bhumi" element={<BanglarBhumiPage/>}/>
-        <Route path="/utilities/banglar-bhumi/converter" element={<LandConverterPage/>}/>
-        <Route path="/utilities/banglar-bhumi/area" element={<LandAreaPage/>}/>
-        <Route path="/utilities/banglar-bhumi/value" element={<LandValuePage/>}/>
-        <Route path="/utilities/banglar-bhumi/scan" element={<LandScanPage/>}/>
+        <Route path="/utilities/land-records" element={<BanglarBhumiPage/>}/>
+        <Route path="/utilities/land-converter" element={<LandConverterPage/>}/>
+        <Route path="/utilities/plot-area" element={<LandAreaPage/>}/>
+        <Route path="/utilities/land-value" element={<LandValuePage/>}/>
+        <Route path="/utilities/document-scanner" element={<LandScanPage/>}/>
+        <Route path="/utilities/banglar-bhumi" element={<Navigate to="/utilities/land-records" replace/>}/>
+        <Route path="/utilities/banglar-bhumi/converter" element={<Navigate to="/utilities/land-converter" replace/>}/>
+        <Route path="/utilities/banglar-bhumi/area" element={<Navigate to="/utilities/plot-area" replace/>}/>
+        <Route path="/utilities/banglar-bhumi/value" element={<Navigate to="/utilities/land-value" replace/>}/>
+        <Route path="/utilities/banglar-bhumi/scan" element={<Navigate to="/utilities/document-scanner" replace/>}/>
         <Route path="/list-your-property" element={<ListPropertyPage/>}/>
         <Route path="/my-listings" element={<MyListingsPage/>}/>
         <Route path="/terms" element={<TermsPage/>}/>

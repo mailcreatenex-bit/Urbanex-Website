@@ -1,12 +1,16 @@
 import { NavLink } from "react-router-dom";
-import { Compass, Calculator, Landmark, Smartphone } from "lucide-react";
+import { Calculator, Camera, Compass, Landmark, Ruler, Scale, Smartphone, Wallet } from "lucide-react";
 import { useI18n } from "@/context/I18nContext";
 
 export const UTILITIES = [
   { to: "/utilities/emi", key: "util.emi", icon: Calculator },
   { to: "/utilities/compass", key: "util.compass", icon: Compass },
   { to: "/utilities/gyroscope", key: "util.gyro", icon: Smartphone },
-  { to: "/utilities/banglar-bhumi", key: "util.bhumi", icon: Landmark },
+  { to: "/utilities/land-records", key: "util.records", icon: Landmark },
+  { to: "/utilities/land-converter", key: "util.converter", icon: Scale },
+  { to: "/utilities/plot-area", key: "util.area", icon: Ruler },
+  { to: "/utilities/land-value", key: "util.value", icon: Wallet },
+  { to: "/utilities/document-scanner", key: "util.scan", icon: Camera },
 ];
 
 // Common frame: a title and a row of tabs to hop between the tools.
