@@ -143,8 +143,10 @@ async def lifespan(_app: FastAPI):
     youtube = asyncio.create_task(youtube_loop())
     blogger = asyncio.create_task(blog_loop())
     crm = asyncio.create_task(crm_loop())
+    listings = asyncio.create_task(listings_loop())
     yield
     crm.cancel()
+    listings.cancel()
     reminders.cancel()
     digests.cancel()
     youtube.cancel()
@@ -656,6 +658,9 @@ async def ensure_indexes():
         await db.properties.create_index("id", unique=True)
         await db.invoices.create_index("invoice_number", unique=True)
         await db.properties.create_index("slug")
+        await db.properties.create_index("owner_user_id")
+        await db.listing_payments.create_index("utr", unique=True)
+        await db.listing_payments.create_index("property_id")
         await db.watchlist.create_index([("user_id", 1), ("property_id", 1)], unique=True)
         await db.watchlist.create_index("property_id")
         await db.digest_subscribers.create_index("email", unique=True)
@@ -685,8 +690,10 @@ async def ensure_indexes():
         logging.warning(f"Index creation failed: {e}")
 
 # Public API responses NEVER carry prices. A visitor unlocks a listing's price with "Interested" (see /viewer).
+PRIVATE_FIELDS = ("price_inr", "price_history", "price_drop_at", "owner", "owner_user_id", "trial_ends_at", "paid_until", "payment", "plan", "listing_state", "payment_submitted_at")
+
 def public_view(item: dict) -> dict:
-    return {k: v for k, v in item.items() if k not in ("price_inr", "price_history", "price_drop_at")}
+    return {k: v for k, v in item.items() if k not in PRIVATE_FIELDS}
 
 # =============== Public content ===============
 @api.get("/")
@@ -704,8 +711,12 @@ async def public_config():
 SEARCH_KEYS = {"q", "zone", "property_type", "status", "min_bedrooms", "min_area", "max_area",
                "furnishing", "possession", "budget", "listing_type"}
 
+# Owner-submitted listings disappear from every public page once their free days or paid days run out.
+HIDDEN_STATES = ["expired", "removed", "rejected"]
+LIVE = {"listing_state": {"$nin": HIDDEN_STATES}}
+
 def build_property_query(p: dict) -> dict:
-    q: dict = {}
+    q: dict = dict(LIVE)
     for k in ("zone", "property_type", "status", "furnishing", "possession"):
         if p.get(k):
             q[k] = p[k]
@@ -773,7 +784,7 @@ def nearby_for(p: dict) -> list:
     return sorted((o for o in out if o["distance_km"] <= 8), key=lambda o: o["distance_km"])[:6]
 
 async def find_property(pid: str) -> Optional[dict]:
-    return await db.properties.find_one({"$or": [{"id": pid}, {"slug": pid}]}, {"_id": 0})
+    return await db.properties.find_one({"$and": [{"$or": [{"id": pid}, {"slug": pid}]}, LIVE]}, {"_id": 0})
 
 @api.get("/properties/{pid}")
 async def get_property(pid: str, request: Request):
@@ -1751,7 +1762,7 @@ STATIC_PAGES = ["/", "/properties", "/construction", "/about", "/contact", "/blo
 @api.get("/sitemap.xml")
 async def sitemap():
     urls = [(p, None) for p in STATIC_PAGES]
-    async for d in db.properties.find({}, {"_id": 0, "id": 1, "slug": 1}):
+    async for d in db.properties.find(LIVE, {"_id": 0, "id": 1, "slug": 1}):
         urls.append((f"/properties/{d.get('slug') or d['id']}", None))
     async for d in db.videos.find({"hidden": {"$ne": True}, "missing": {"$ne": True}}, {"_id": 0, "video_id": 1, "published_at": 1}).limit(5000):
         urls.append((f"/properties/video/{d['video_id']}", (d.get("published_at") or "")[:10] or None))
@@ -1985,7 +1996,7 @@ def listing_card(p: dict) -> dict:
     return {k: p.get(k) for k in ("id", "slug", "title", "zone", "image", "property_type", "bedrooms", "area_sqft")}
 
 async def run_quiz(a: QuizAnswers) -> list:
-    props = await db.properties.find({"status": {"$ne": "sold"}}, {"_id": 0}).to_list(500)
+    props = await db.properties.find({"status": {"$ne": "sold"}, **LIVE}, {"_id": 0}).to_list(500)
     by_zone: dict = {}
     for p in props:
         by_zone.setdefault(p["zone"], []).append(p)
@@ -2136,7 +2147,7 @@ async def digest_unsubscribe(token: str = Query(..., min_length=10, max_length=1
     return info_page("You are unsubscribed", "You will not receive the weekly digest any more.")
 
 async def market_insight() -> Optional[str]:
-    avail = await db.properties.find({"status": "available"}, {"_id": 0, "zone": 1}).to_list(1000)
+    avail = await db.properties.find({"status": "available", **LIVE}, {"_id": 0, "zone": 1}).to_list(1000)
     if not avail:
         return None
     counts: dict = {}
@@ -2146,7 +2157,7 @@ async def market_insight() -> Optional[str]:
     return f"{len(avail)} properties are available across {len(counts)} zones; {top} currently has the most listings ({n})."
 
 async def build_digest(sub: dict, since_iso: str) -> Optional[dict]:
-    new = await db.properties.find({"status": "available", "created_at": {"$gt": since_iso}}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    new = await db.properties.find({"status": "available", "created_at": {"$gt": since_iso}, **LIVE}, {"_id": 0}).sort("created_at", -1).to_list(50)
     if sub.get("user_id"):
         searches = await db.saved_searches.find({"user_id": sub["user_id"]}, {"_id": 0}).to_list(20)
         if searches:
@@ -2342,7 +2353,7 @@ Respond with ONLY a JSON object: {"reply": string, "property_slugs": [slug,...],
 Use action "book_visit" when the user wants to see a property (put its slug in property_slugs), and "handoff" when you cannot answer or the user wants to talk to a person."""
 
 async def assistant_listings(unlocked: dict) -> list:
-    props = await db.properties.find({"status": {"$ne": "sold"}}, {"_id": 0}).to_list(80)
+    props = await db.properties.find({"status": {"$ne": "sold"}, **LIVE}, {"_id": 0}).to_list(80)
     rows = []
     for p in props:
         row = {k: p.get(k) for k in ("slug", "title", "zone", "property_type", "bedrooms", "bathrooms", "area_sqft", "status",
@@ -2415,7 +2426,7 @@ async def assistant_chat(payload: ChatRequest, request: Request):
         result = await rule_based_reply(last)
     props = []
     for slug in result["property_slugs"]:  # only real listings can ever be shown
-        p = await db.properties.find_one({"slug": slug, "status": {"$ne": "sold"}}, {"_id": 0})
+        p = await db.properties.find_one({"slug": slug, "status": {"$ne": "sold"}, **LIVE}, {"_id": 0})
         if p:
             props.append(listing_card(p))
     result["properties"] = props
@@ -4204,6 +4215,384 @@ async def crm_loop():
 async def backfill_lead_keys():
     async for l in db.leads.find({"phone_key": {"$exists": False}, "phone": {"$ne": None}}, {"_id": 0, "id": 1, "phone": 1}).limit(20000):
         await db.leads.update_one({"id": l["id"]}, {"$set": {"phone_key": phone_key(l["phone"])}})
+
+# =============== Owner listings: 3 free days, then UPI payment confirmed by hand ===============
+# Flow: an owner signs in and lists a property -> it is live at once ("trial") for the free days -> the owner pays by UPI and
+# sends the transaction reference -> Ayan checks his bank/UPI app and confirms -> live for the paid days.
+# No confirmed payment: the listing is hidden when the free days end, and deleted a month later.
+DEFAULT_LISTING_SETTINGS = {
+    "accepting": True, "upi_id": "", "upi_name": "Urbanex Realty", "qr_image": None, "trial_days": 3, "grace_days": 3, "max_per_owner": 5,
+    "plans": [{"id": "30", "days": 30, "amount": 499, "label": "30 days"}, {"id": "90", "days": 90, "amount": 999, "label": "90 days"}],
+}
+UPI_RE = r"^[A-Za-z0-9._\-]{2,64}@[A-Za-z][A-Za-z0-9.\-]{1,30}$"
+UTR_RE = r"^[A-Za-z0-9]{8,30}$"
+
+async def listing_settings() -> dict:
+    doc = await db.settings.find_one({"_id": "listing_settings"}, {"_id": 0}) or {}
+    return {**DEFAULT_LISTING_SETTINGS, **doc}
+
+class PlanIn(BaseModel):
+    id: str = Field(min_length=1, max_length=20, pattern=r"^[A-Za-z0-9_-]+$")
+    days: int = Field(ge=1, le=730)
+    amount: int = Field(ge=1, le=10_000_000)
+    label: str = Field(min_length=1, max_length=40)
+
+class ListingSettingsIn(BaseModel):
+    accepting: Optional[bool] = None
+    upi_id: Optional[str] = Field(default=None, max_length=100)
+    upi_name: Optional[str] = Field(default=None, max_length=60)
+    qr_image: Optional[ImageUrl] = None
+    trial_days: Optional[int] = Field(default=None, ge=1, le=30)
+    grace_days: Optional[int] = Field(default=None, ge=0, le=14)
+    max_per_owner: Optional[int] = Field(default=None, ge=1, le=100)
+    plans: Optional[List[PlanIn]] = Field(default=None, min_length=1, max_length=6)
+
+@api.get("/listing-plans")
+async def listing_plans():
+    """Public: what listing costs. The UPI details are only shown to a signed-in owner (see /owner/payment-info)."""
+    st = await listing_settings()
+    return {"accepting": bool(st["accepting"] and st["upi_id"]), "trial_days": st["trial_days"], "plans": st["plans"], "max_per_owner": st["max_per_owner"]}
+
+@api.get("/owner/payment-info")
+async def owner_payment_info(request: Request):
+    await require_user(request)
+    st = await listing_settings()
+    return {"upi_id": st["upi_id"], "upi_name": st["upi_name"], "qr_image": st["qr_image"], "plans": st["plans"]}
+
+@api.post("/owner/uploads")
+async def owner_upload_image(request: Request, file: UploadFile = File(...)):
+    """Photos for an owner's own listing (signed-in users only, limited per hour)."""
+    user = await require_user(request)
+    rate_limit(request, "owner_upload", 40, 3600)
+    if not await db.properties.count_documents({"owner_user_id": user["user_id"]}, limit=1) and not await listing_settings_accepting():
+        raise HTTPException(503, "Listings are not being accepted right now")
+    data = await file.read(MAX_IMAGE_BYTES + 1)
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(413, "Image too large (8 MB max)")
+    ext = sniff_image(data)
+    if not ext:
+        raise HTTPException(415, "Only JPEG, PNG or WebP images are allowed")
+    name = f"{uuid.uuid4().hex}.{ext}"
+    await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    return {"url": f"/api/uploads/{name}"}
+
+async def listing_settings_accepting() -> bool:
+    st = await listing_settings()
+    return bool(st["accepting"] and st["upi_id"])
+
+@api.get("/admin/listing-settings")
+async def admin_listing_settings(request: Request):
+    await require_admin(request)
+    return await listing_settings()
+
+@api.put("/admin/listing-settings")
+async def admin_listing_settings_save(payload: ListingSettingsIn, request: Request):
+    await require_admin(request)
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("upi_id"):
+        data["upi_id"] = data["upi_id"].strip()
+        if not re.match(UPI_RE, data["upi_id"]):
+            raise HTTPException(422, "That does not look like a UPI ID (it looks like name@bank)")
+    if "plans" in data:
+        data["plans"] = [PlanIn(**p).model_dump() for p in data["plans"]]
+    if data:
+        await db.settings.update_one({"_id": "listing_settings"}, {"$set": data}, upsert=True)
+    return await listing_settings()
+
+# ---- owners
+class OwnerListingIn(PropertyFields):
+    phone: Phone
+    accepted_terms: bool = False
+
+def owner_view(p: dict, interested: int = 0) -> dict:
+    now = now_utc()
+    state = p.get("listing_state")
+    end = p.get("paid_until") if state == "paid" else p.get("trial_ends_at") if state == "trial" else None
+    if state == "payment_submitted" and p.get("payment_submitted_at"):
+        end = p["payment_submitted_at"]    # only used to compute the grace period below
+    left = None
+    if state in ("trial", "paid") and end:
+        left = max(0, math.ceil((parse_dt(end) - now).total_seconds() / 86400))
+    return {**{k: v for k, v in p.items() if k not in ("owner",)}, "days_left": left, "interested_count": interested,
+            "can_pay": state in ("trial", "expired", "paid") and (p.get("payment") or {}).get("status") != "submitted"}
+
+@api.post("/owner/listings")
+async def owner_create_listing(payload: OwnerListingIn, request: Request):
+    user = await require_user(request)
+    rate_limit(request, "owner_listing", 10, 3600)
+    st = await listing_settings()
+    if not st["accepting"] or not st["upi_id"]:
+        raise HTTPException(503, "New listings are not being accepted right now. Please try again soon.")
+    if not payload.accepted_terms:
+        raise HTTPException(422, "Please accept the listing terms")
+    if await db.properties.count_documents({"owner_user_id": user["user_id"], "listing_state": {"$ne": "removed"}}) >= st["max_per_owner"]:
+        raise HTTPException(409, f"You can have up to {st['max_per_owner']} listings. Delete one or contact us.")
+    data = payload.model_dump(exclude={"phone", "accepted_terms"})
+    data.update(verified=False, documents=[], status="available")
+    data["image"] = data.get("image") or yt_thumb(data.get("video_id"))
+    prop = Property(**data).model_dump()
+    now = now_utc()
+    prop["slug"] = await unique_slug(db.properties, prop["title"])
+    if prop["latitude"] is None and prop["zone"] in ZONE_COORDS:
+        prop["latitude"], prop["longitude"] = ZONE_COORDS[prop["zone"]]
+    prop["created_at"] = now.isoformat()
+    prop.update(owner_listing=True, listed_by=public_name(user.get("name") or "Owner"), owner_user_id=user["user_id"],
+                owner={"user_id": user["user_id"], "name": user.get("name"), "email": user.get("email"), "phone": payload.phone},
+                listing_state="trial", trial_ends_at=(now + timedelta(days=st["trial_days"])).isoformat(), paid_until=None, payment=None,
+                terms_accepted_at=now.isoformat())
+    await db.properties.insert_one(dict(prop))
+    await notify_admin("owner_listing", f"New owner listing: {prop['title']}", f"{user.get('name')} · {payload.phone} · {prop['zone']}", link="/admin/listings")
+    await notify(user["user_id"], "listing", "Your listing is live", f"{prop['title']} is live for {st['trial_days']} days. Pay by UPI to keep it online.", link="/my-listings")
+    return owner_view(prop)
+
+async def my_listing(pid: str, user: dict) -> dict:
+    p = await db.properties.find_one({"id": pid, "owner_user_id": user["user_id"], "listing_state": {"$ne": "removed"}}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Listing not found")
+    return p
+
+@api.get("/owner/listings")
+async def owner_listings(request: Request):
+    user = await require_user(request)
+    items = await db.properties.find({"owner_user_id": user["user_id"], "listing_state": {"$ne": "removed"}}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    out = []
+    for p in items:
+        out.append(owner_view(p, await db.interests.count_documents({"item_type": "property", "item_id": p["id"]})))
+    return out
+
+class OwnerListingUpdate(PropertyUpdate):
+    pass
+
+@api.patch("/owner/listings/{pid}")
+async def owner_update_listing(pid: str, patch: OwnerListingUpdate, request: Request):
+    user = await require_user(request)
+    p = await my_listing(pid, user)
+    data = patch.model_dump(exclude_unset=True)
+    for blocked in ("verified", "documents"):
+        data.pop(blocked, None)
+    for required in ("title", "zone", "property_type", "area_sqft", "description"):
+        if required in data and data[required] is None:
+            raise HTTPException(422, f"{required} cannot be empty")
+    if not data:
+        raise HTTPException(400, "Nothing to update")
+    if "title" in data and data["title"] != p["title"]:
+        data["slug"] = await unique_slug(db.properties, data["title"], pid)
+    if "image" in data or "video_id" in data:
+        vid = data["video_id"] if "video_id" in data else p.get("video_id")
+        img = data["image"] if "image" in data else p.get("image")
+        if not img or (str(img).startswith("https://i.ytimg.com/") and "video_id" in data):
+            data["image"] = yt_thumb(vid)
+    await db.properties.update_one({"id": pid}, {"$set": data})
+    return owner_view(await db.properties.find_one({"id": pid}, {"_id": 0}))
+
+@api.delete("/owner/listings/{pid}")
+async def owner_delete_listing(pid: str, request: Request):
+    user = await require_user(request)
+    await my_listing(pid, user)
+    if await db.listing_payments.find_one({"property_id": pid, "status": "confirmed"}, {"_id": 1}):
+        await db.properties.update_one({"id": pid}, {"$set": {"listing_state": "removed", "expired_at": now_utc().isoformat()}})   # keep it for our accounts
+    else:
+        await db.properties.delete_one({"id": pid})
+    return {"ok": True}
+
+class PaymentIn(BaseModel):
+    plan_id: str = Field(min_length=1, max_length=20)
+    utr: str = Field(pattern=UTR_RE)          # the UPI transaction / reference number (12 digits for most banks)
+    payer_upi: Optional[str] = Field(default=None, max_length=100)
+    note: Optional[str] = Field(default=None, max_length=300)
+
+@api.post("/owner/listings/{pid}/payment")
+async def owner_submit_payment(pid: str, payload: PaymentIn, request: Request):
+    user = await require_user(request)
+    rate_limit(request, "owner_payment", 10, 3600)
+    p = await my_listing(pid, user)
+    st = await listing_settings()
+    plan = next((x for x in st["plans"] if x["id"] == payload.plan_id), None)
+    if not plan:
+        raise HTTPException(422, "Choose one of the listed plans")
+    if p.get("listing_state") == "payment_submitted" or (p.get("payment") or {}).get("status") == "submitted":
+        raise HTTPException(409, "Your payment is already waiting to be confirmed")
+    utr = payload.utr.upper()
+    if await db.listing_payments.find_one({"utr": utr}, {"_id": 1}):
+        raise HTTPException(409, "This transaction reference was already used")
+    now = now_utc()
+    rec = {"id": new_id("pay_"), "property_id": pid, "property_title": p["title"], "user_id": user["user_id"], "owner_name": user.get("name"),
+           "owner_phone": (p.get("owner") or {}).get("phone"), "plan_id": plan["id"], "days": plan["days"], "amount": plan["amount"], "utr": utr,
+           "payer_upi": payload.payer_upi, "note": payload.note, "status": "submitted", "submitted_at": now.isoformat()}
+    await db.listing_payments.insert_one(dict(rec))
+    sets: dict = {"payment": {k: rec[k] for k in ("id", "plan_id", "days", "amount", "utr", "status", "submitted_at")}}
+    if p.get("listing_state") in ("trial", "expired"):
+        sets.update(listing_state="payment_submitted", payment_submitted_at=now.isoformat())    # stays (or comes back) online while Ayan checks
+    await db.properties.update_one({"id": pid}, {"$set": sets})
+    await notify_admin("listing_payment", f"Confirm payment: ₹{plan['amount']} from {user.get('name')}",
+                       f"{p['title']} · UTR {utr} · {plan['label']}", link="/admin/listings")
+    await notify(user["user_id"], "listing", "Payment received for checking", "We will confirm it shortly. Your listing stays online meanwhile.", link="/my-listings")
+    return owner_view(await db.properties.find_one({"id": pid}, {"_id": 0}))
+
+# ---- admin
+def admin_listing_view(p: dict, pays: list) -> dict:
+    return {**p, "payments": pays}
+
+@api.get("/admin/listings")
+async def admin_listings(request: Request, state: Optional[str] = None):
+    await require_admin(request)
+    q: dict = {"owner_listing": True}
+    if state:
+        q["listing_state"] = state
+    items = await db.properties.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    pays: dict = {}
+    async for r in db.listing_payments.find({}, {"_id": 0}).sort("submitted_at", -1):
+        pays.setdefault(r["property_id"], []).append(r)
+    allq = await db.properties.find({"owner_listing": True}, {"_id": 0, "listing_state": 1}).to_list(5000)
+    counts: dict = {}
+    for d in allq:
+        counts[d.get("listing_state")] = counts.get(d.get("listing_state"), 0) + 1
+    month_start = now_utc().astimezone(ZoneInfo("Asia/Kolkata")).replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).isoformat()
+    total = month = 0
+    async for r in db.listing_payments.find({"status": "confirmed"}, {"_id": 0, "amount": 1, "confirmed_at": 1}):
+        total += r["amount"]
+        if r.get("confirmed_at", "") >= month_start:
+            month += r["amount"]
+    return {"items": [admin_listing_view(p, pays.get(p["id"], [])) for p in items], "counts": counts, "revenue_total": total, "revenue_month": month}
+
+class ConfirmIn(BaseModel):
+    payment_id: Optional[str] = Field(default=None, max_length=40)
+    days: Optional[int] = Field(default=None, ge=1, le=730)     # override the plan's days if you agreed something else
+
+async def email_owner(p: dict, subject: str, body: str):
+    to = (p.get("owner") or {}).get("email")
+    if to:
+        await send_email([to], subject, body)
+
+@api.post("/admin/listings/{pid}/confirm")
+async def admin_confirm_payment(pid: str, payload: ConfirmIn, request: Request):
+    user = await require_admin(request)
+    p = await db.properties.find_one({"id": pid, "owner_listing": True}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Listing not found")
+    q = {"property_id": pid, "status": "submitted"}
+    if payload.payment_id:
+        q["id"] = payload.payment_id
+    rec = await db.listing_payments.find_one(q, {"_id": 0}, sort=[("submitted_at", -1)])
+    if not rec:
+        raise HTTPException(404, "No payment is waiting for this listing")
+    now = now_utc()
+    days = payload.days or rec["days"]
+    base = parse_dt(p["paid_until"]) if p.get("paid_until") and parse_dt(p["paid_until"]) > now else now
+    until = (base + timedelta(days=days)).isoformat()
+    first_live = p.get("listing_state") != "paid" and not p.get("paid_until")
+    await db.listing_payments.update_one({"id": rec["id"]}, {"$set": {"status": "confirmed", "confirmed_at": now.isoformat(), "confirmed_by": user["email"], "days": days}})
+    await db.properties.update_one({"id": pid}, {"$set": {"listing_state": "paid", "paid_until": until, "plan": rec["plan_id"], "expired_at": None, "renewal_reminded_for": None,
+                                                         "payment": {**(p.get("payment") or {}), "status": "confirmed", "confirmed_at": now.isoformat()}}})
+    when_ = parse_dt(until).astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y")
+    await notify(p["owner_user_id"], "listing", "Payment confirmed, your listing is live", f"{p['title']} is online until {when_}.", link="/my-listings")
+    await email_owner(p, "Your Urbanex listing is confirmed", f"Hello {p['owner'].get('name')},\n\nWe received your payment. {p['title']} is live until {when_}.\n\nThank you,\nUrbanex Realty")
+    if first_live:
+        fresh = await db.properties.find_one({"id": pid}, {"_id": 0})
+        spawn(notify_saved_searches(fresh))
+        spawn(auto_push("New listing", f"{fresh['title']} · {fresh['zone']}", f"/properties/{fresh.get('slug') or fresh['id']}", "new-listing"))
+    return {"ok": True, "paid_until": until}
+
+class RejectIn(BaseModel):
+    reason: str = Field(min_length=3, max_length=300)
+    payment_id: Optional[str] = Field(default=None, max_length=40)
+
+@api.post("/admin/listings/{pid}/reject")
+async def admin_reject_payment(pid: str, payload: RejectIn, request: Request):
+    await require_admin(request)
+    p = await db.properties.find_one({"id": pid, "owner_listing": True}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Listing not found")
+    q = {"property_id": pid, "status": "submitted"}
+    if payload.payment_id:
+        q["id"] = payload.payment_id
+    rec = await db.listing_payments.find_one(q, {"_id": 0}, sort=[("submitted_at", -1)])
+    if not rec:
+        raise HTTPException(404, "No payment is waiting for this listing")
+    now = now_utc()
+    await db.listing_payments.update_one({"id": rec["id"]}, {"$set": {"status": "rejected", "rejected_at": now.isoformat(), "reason": payload.reason}})
+    sets: dict = {"payment": {**(p.get("payment") or {}), "status": "rejected", "reason": payload.reason}}
+    if p.get("listing_state") == "payment_submitted":
+        trial_left = p.get("trial_ends_at") and parse_dt(p["trial_ends_at"]) > now
+        sets["listing_state"] = "trial" if trial_left else "expired"
+        if not trial_left:
+            sets["expired_at"] = now.isoformat()
+    await db.properties.update_one({"id": pid}, {"$set": sets})
+    await notify(p["owner_user_id"], "listing", "We could not confirm your payment", payload.reason, link="/my-listings")
+    await email_owner(p, "Your Urbanex listing payment", f"Hello {p['owner'].get('name')},\n\nWe could not confirm your payment: {payload.reason}\n\nPlease check and send the reference again from My listings.\n\nUrbanex Realty")
+    return {"ok": True}
+
+class ListingActionIn(BaseModel):
+    action: Literal["extend", "remove", "restore"]
+    days: int = Field(default=3, ge=1, le=365)
+
+@api.post("/admin/listings/{pid}/action")
+async def admin_listing_action(pid: str, payload: ListingActionIn, request: Request):
+    await require_admin(request)
+    p = await db.properties.find_one({"id": pid, "owner_listing": True}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Listing not found")
+    now = now_utc()
+    if payload.action == "remove":
+        await db.properties.update_one({"id": pid}, {"$set": {"listing_state": "removed", "expired_at": now.isoformat()}})
+        await notify(p["owner_user_id"], "listing", "Your listing was removed", f"{p['title']} was taken down by Urbanex. Contact us if you think this is a mistake.", link="/my-listings")
+    elif p.get("listing_state") == "paid":
+        await db.properties.update_one({"id": pid}, {"$set": {"paid_until": (parse_dt(p["paid_until"]) + timedelta(days=payload.days)).isoformat()}})
+    else:        # extend a trial, or bring an expired / removed listing back for some days
+        live = p.get("listing_state") == "trial" and p.get("trial_ends_at") and parse_dt(p["trial_ends_at"]) > now
+        base = parse_dt(p["trial_ends_at"]) if live else now
+        await db.properties.update_one({"id": pid}, {"$set": {"listing_state": "trial", "trial_ends_at": (base + timedelta(days=payload.days)).isoformat(), "expired_at": None}})
+    return {"ok": True}
+
+# ---- background: end the free days, expire paid listings, remind owners, tidy up
+async def listings_pass():
+    now = now_utc()
+    nowi = now.isoformat()
+    st = await listing_settings()
+
+    async def expire(p: dict, why: str):
+        await db.properties.update_one({"id": p["id"]}, {"$set": {"listing_state": "expired", "expired_at": nowi}})
+        await notify(p["owner_user_id"], "listing", "Your listing is no longer online", why, link="/my-listings")
+        await email_owner(p, "Your Urbanex listing", f"Hello {p['owner'].get('name')},\n\n{p['title']}: {why}\n\nOpen My listings on {PUBLIC_SITE_URL}/my-listings to pay and bring it back.\n\nUrbanex Realty")
+
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "trial", "trial_ends_at": {"$lte": nowi}}, {"_id": 0}).limit(100):
+        await expire(p, "The free days ended and no payment was received, so it has been taken offline.")
+    grace_cut = (now - timedelta(days=st["grace_days"])).isoformat()
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "payment_submitted", "payment_submitted_at": {"$lte": grace_cut}}, {"_id": 0}).limit(100):
+        await expire(p, "We could not confirm your payment in time, so it has been taken offline. Contact us with your UPI screenshot.")
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "paid", "paid_until": {"$lte": nowi}}, {"_id": 0}).limit(100):
+        await expire(p, "Your paid period has ended. Renew to bring it back.")
+    # reminders: one day before the free days end, a week before a paid period ends
+    soon = (now + timedelta(hours=24)).isoformat()
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "trial", "trial_ends_at": {"$lte": soon, "$gt": nowi}, "trial_reminded": {"$ne": True}}, {"_id": 0}).limit(100):
+        await db.properties.update_one({"id": p["id"]}, {"$set": {"trial_reminded": True}})
+        await notify(p["owner_user_id"], "listing", "Your free days end tomorrow", f"Pay by UPI to keep {p['title']} online.", link="/my-listings")
+        await email_owner(p, "Your Urbanex listing ends tomorrow", f"Hello {p['owner'].get('name')},\n\nThe free days for {p['title']} end tomorrow. Pay by UPI from {PUBLIC_SITE_URL}/my-listings to keep it online.\n\nUrbanex Realty")
+    week = (now + timedelta(days=7)).isoformat()
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "paid", "paid_until": {"$lte": week, "$gt": nowi}}, {"_id": 0}).limit(100):
+        if p.get("renewal_reminded_for") == p["paid_until"]:
+            continue
+        await db.properties.update_one({"id": p["id"]}, {"$set": {"renewal_reminded_for": p["paid_until"]}})
+        await notify(p["owner_user_id"], "listing", "Your listing ends in a week", f"Renew {p['title']} to keep it online.", link="/my-listings")
+    # unpaid and gone for a month: delete (never anything that was paid for)
+    old = (now - timedelta(days=30)).isoformat()
+    async for p in db.properties.find({"owner_listing": True, "listing_state": "expired", "expired_at": {"$lte": old}}, {"_id": 0, "id": 1}).limit(100):
+        if not await db.listing_payments.find_one({"property_id": p["id"], "status": "confirmed"}, {"_id": 1}):
+            await db.properties.delete_one({"id": p["id"]})
+    if await db.properties.count_documents({"owner_listing": True, "listing_state": "payment_submitted"}) and not await db.settings.find_one({"_id": f"pay_nudge_{now.strftime('%Y-%m-%d')}"}):
+        await db.settings.update_one({"_id": f"pay_nudge_{now.strftime('%Y-%m-%d')}"}, {"$set": {"at": nowi}}, upsert=True)
+        n = await db.properties.count_documents({"owner_listing": True, "listing_state": "payment_submitted"})
+        await notify_admin("listing_payment", f"{n} payment{'s' if n > 1 else ''} waiting for you to confirm", "Open Listings and check your UPI app.", link="/admin/listings")
+
+async def listings_loop():
+    while True:
+        try:
+            await listings_pass()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logging.warning(f"Listings pass failed: {type(e).__name__}: {e}")
+        await asyncio.sleep(900)
 
 # ---------- Include ----------
 app.include_router(api)
