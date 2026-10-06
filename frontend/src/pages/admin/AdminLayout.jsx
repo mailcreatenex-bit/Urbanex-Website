@@ -14,7 +14,7 @@ export default function AdminLayout() {
   if (!user.is_admin) return <Navigate to="/" replace/>;
 
   const items = [
-    { to: "/admin/leads", label: "Leads", icon: Users, tid: ADMIN.navLeads },
+    { to: "/admin/leads", label: "CRM", icon: Users, tid: ADMIN.navLeads },
     { to: "/admin/interests", label: "Interested", icon: HandHeart, tid: "admin-nav-interests" },
     { to: "/admin/videos", label: "Videos", icon: Youtube, tid: "admin-nav-videos" },
     { to: "/admin/visits", label: "Visits", icon: CalendarCheck, tid: "admin-nav-visits" },
