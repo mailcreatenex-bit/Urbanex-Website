@@ -1,0 +1,6 @@
+{
+  "appId": "in.urbanex.realty",
+  "appName": "Urbanex Realty",
+  "webDir": "../frontend/build",
+  "server": { "androidScheme": "https" }
+}
