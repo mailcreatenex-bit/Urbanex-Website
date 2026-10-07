@@ -18,7 +18,7 @@ export const assetUrl = (u, width) => {
   return u;
 };
 // Shared links go through the API so WhatsApp/Facebook previews (which don't run JS) get Open Graph tags.
-export const shareUrl = (kind, slug) => `${BACKEND}/api/share/${kind}/${encodeURIComponent(slug)}`;
+export const shareUrl = (kind, slug) => `${BACKEND || (typeof window !== "undefined" ? window.location.origin : "")}/api/share/${kind}/${encodeURIComponent(slug)}`;
 
 export const inr = (n) =>
   n == null ? "₹00.00 L" : n >= 10000000 ? `₹${(n / 10000000).toFixed(2)} Cr` : `₹${(n / 100000).toFixed(2)} L`;

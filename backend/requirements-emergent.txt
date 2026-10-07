@@ -1,0 +1,5 @@
+# Optional. Only the older chat assistant and voice-note transcription use this; everything else (Gemini features, CRM, concierge) does not.
+# It is large (about 300 MB installed), so the free hosting setup leaves it out and those two features fall back to simple modes.
+--extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+-r requirements.txt
+emergentintegrations==0.2.0

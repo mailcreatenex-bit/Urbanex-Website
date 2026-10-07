@@ -1,0 +1,32 @@
+# Free front end on Netlify (commercial use is allowed on its free plan). In Netlify: Add new site > Import from Git > this repository.
+# The site and the API share one address: /api/* is forwarded to the Render server, so sign-in cookies stay first-party.
+# After creating the Render service, replace the address below with its real one if it differs.
+[build]
+  base = "frontend"
+  command = "yarn install --frozen-lockfile && yarn build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "20"
+  CI = "false"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://urbanex-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

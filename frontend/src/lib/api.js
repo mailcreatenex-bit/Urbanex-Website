@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";   // empty = same site: the host forwards /api to the server (see netlify.toml)
 export const API_BASE = `${BACKEND_URL}/api`;
 
 // A random id kept in this browser. It lets the server notice one device submitting many different

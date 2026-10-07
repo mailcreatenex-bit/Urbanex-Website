@@ -1,0 +1,39 @@
+# Free backend on Render. In Render: New > Blueprint > pick this repository. It asks for the values marked "sync: false".
+# The free plan sleeps after 15 minutes without visitors; docs/DEPLOY_FREE.md explains the free ping that keeps it awake.
+services:
+  - type: web
+    name: urbanex-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      - key: MONGO_URL            # the MongoDB Atlas connection string
+        sync: false
+      - key: DB_NAME
+        value: urbanex
+      - key: CORS_ORIGINS         # your site address, for example https://urbanex.netlify.app
+        sync: false
+      - key: PUBLIC_SITE_URL      # the same site address
+        sync: false
+      - key: PUBLIC_API_URL       # the same site address again (the site forwards /api to this server)
+        sync: false
+      - key: ADMIN_EMAILS         # your Google e-mail(s), comma separated
+        sync: false
+      - key: UPLOADS_IN_DB        # the free disk is wiped on restart, so uploads are also kept in the database
+        value: "1"
+      - key: IP_HASH_SALT
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_CHANNEL_ID
+        sync: false
+      - key: WHATSAPP_NUMBER      # digits only with country code, e.g. 919830012345
+        sync: false

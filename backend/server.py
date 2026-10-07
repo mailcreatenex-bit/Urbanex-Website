@@ -1,6 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, UploadFile, File, Form, Query
 from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -1382,6 +1381,30 @@ async def remember_image(url: str, data: bytes, who: str):
     if h is not None:
         await db.image_hashes.insert_one({"url": url, "hash": str(h), "who": who, "at": now_utc().isoformat()})
 
+UPLOADS_IN_DB = os.environ.get("UPLOADS_IN_DB", "0").strip().lower() in ("1", "true", "yes")   # on free hosts the disk is wiped on every restart, so keep a copy in the database
+UPLOAD_NAME = re.compile(r"^[A-Za-z0-9]{16,64}\.(jpg|png|webp|pdf)$")
+UPLOAD_TYPES = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp", "pdf": "application/pdf"}
+
+async def store_upload(name: str, data: bytes):
+    await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    if UPLOADS_IN_DB:
+        await db.upload_blobs.replace_one({"name": name}, {"name": name, "data": data, "at": now_utc().isoformat()}, upsert=True)
+
+async def read_upload(name: str) -> Optional[bytes]:
+    """The bytes of an uploaded file: from disk, or (after a restart wiped the disk) from the database copy, which is put back on disk."""
+    if not UPLOAD_NAME.match(name):
+        return None
+    p = UPLOAD_DIR / name
+    if p.is_file():
+        return await asyncio.to_thread(p.read_bytes)
+    if UPLOADS_IN_DB:
+        row = await db.upload_blobs.find_one({"name": name}, {"_id": 0, "data": 1})
+        if row:
+            data = bytes(row["data"])
+            await asyncio.to_thread(p.write_bytes, data)
+            return data
+    return None
+
 def sniff_image(b: bytes) -> Optional[str]:
     if b[:3] == b"\xff\xd8\xff":
         return "jpg"
@@ -1401,7 +1424,7 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     if not ext:
         raise HTTPException(415, "Only JPEG, PNG or WebP images are allowed")
     name = f"{uuid.uuid4().hex}.{ext}"
-    await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    await store_upload(name, data)
     await remember_image(f"/api/uploads/{name}", data, "admin")
     return {"url": f"/api/uploads/{name}"}
 
@@ -4433,7 +4456,7 @@ async def owner_upload_image(request: Request, file: UploadFile = File(...)):
     if not ext:
         raise HTTPException(415, "Only JPEG, PNG or WebP images are allowed")
     name = f"{uuid.uuid4().hex}.{ext}"
-    await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    await store_upload(name, data)
     await remember_image(f"/api/uploads/{name}", data, user["user_id"])
     return {"url": f"/api/uploads/{name}"}
 
@@ -5058,7 +5081,7 @@ async def admin_land_files(rid: str, request: Request, files: List[UploadFile] =
     for (mime, data), f in zip(blobs, files):
         ext = {v: k for k, v in DOC_MIME.items()}[mime]
         name = f"{uuid.uuid4().hex}.{ext}"
-        await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+        await store_upload(name, data)
         added.append({"url": f"/api/uploads/{name}", "name": (f.filename or name)[:80], "mime": mime})
     await db.land_reports.update_one({"id": rid}, {"$push": {"files": {"$each": added}}, "$set": {"updated_at": now_utc().isoformat()}})
     return {"files": (await admin_land_report(rid))["files"]}
@@ -5072,9 +5095,9 @@ async def admin_land_ai(rid: str, request: Request):
     r = await admin_land_report(rid)
     blobs = []
     for f in r.get("files") or []:
-        p = UPLOAD_DIR / Path(f["url"]).name
-        if p.is_file():
-            blobs.append((f["mime"], await asyncio.to_thread(p.read_bytes)))
+        raw = await read_upload(Path(f["url"]).name)
+        if raw:
+            blobs.append((f["mime"], raw))
     if not blobs:
         raise HTTPException(409, "Attach the record first")
     try:
@@ -6098,7 +6121,12 @@ async def run_quality_check(pid: str):
 
 # ---------- Include ----------
 app.include_router(api)
-app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+@app.get("/api/uploads/{name}")
+async def serve_upload(name: str):
+    data = await read_upload(name)
+    if data is None:
+        raise HTTPException(404, "Not found")
+    return Response(content=data, media_type=UPLOAD_TYPES[name.rsplit(".", 1)[1]], headers={"Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff"})
 
 @app.middleware("http")
 async def csrf_origin_check(request: Request, call_next):
