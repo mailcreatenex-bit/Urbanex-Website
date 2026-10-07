@@ -223,7 +223,7 @@ def test_cold_leads_are_woken_up_with_a_matching_listing(c):
     settle(c)
     assert c.portal.call(crm_auto.reawaken_pass) >= 1
     rows = {o["lead_id"]: o for o in outbox(c, kind="reawaken")}
-    assert cold in rows and "Plot in Borehat" in rows[cold]["text"] and warm not in rows
+    assert cold in rows and "Borehat" in rows[cold]["text"] and rows[cold]["listing_ref"] and warm not in rows       # (other tests leave their own Borehat plots in the database too)
     assert c.portal.call(crm_auto.reawaken_pass) == 0                                                  # not again within two weeks
 
 
