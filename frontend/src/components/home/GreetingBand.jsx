@@ -39,13 +39,13 @@ export default function GreetingBand() {
 
   return (
     <section data-testid="greeting" className={`px-6 md:px-12 ${g.special ? "bg-gradient-to-r from-urbanex-gold/20 via-urbanex-cream to-urbanex-gold/20" : "bg-urbanex-cream"}`}>
-      <div className="max-w-7xl mx-auto py-6 md:py-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <span className="text-3xl md:text-4xl" aria-hidden="true">{g.emoji}</span>
-        <div className="flex-1 min-w-[240px]">
-          <h2 className="font-display text-2xl md:text-3xl text-urbanex-navy leading-tight" data-testid="greeting-title">{g.title}</h2>
-          <p className="mt-1 text-sm md:text-base text-urbanex-navy/70" data-testid="greeting-text">{g.text}</p>
+      <div className="max-w-7xl mx-auto py-12 md:py-20 flex flex-wrap items-center gap-x-8 gap-y-5">
+        <span className="text-6xl md:text-8xl" aria-hidden="true">{g.emoji}</span>
+        <div className="flex-1 min-w-[260px]">
+          <h2 className="font-display text-4xl md:text-7xl text-urbanex-navy leading-[1.02] tracking-tight" data-testid="greeting-title">{g.title}</h2>
+          <p className="mt-3 text-lg md:text-2xl text-urbanex-navy/70 leading-snug" data-testid="greeting-text">{g.text}</p>
         </div>
-        <Link to="/properties" className="group inline-flex items-center gap-2 text-sm text-urbanex-navy hover:text-urbanex-gold">
+        <Link to="/properties" className="group inline-flex items-center gap-2 text-base md:text-lg font-medium text-urbanex-navy hover:text-urbanex-gold">
           {cta} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1"/>
         </Link>
       </div>
