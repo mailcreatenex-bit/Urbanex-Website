@@ -5208,8 +5208,11 @@ async def save_person(d: dict, source: str, by: str, activity: Optional[dict] = 
             sets["property_interest"] = d["summary"][:200]
         await db.leads.update_one({"id": lead["id"]}, {"$set": sets, "$push": {"notes": note, "activities": {"$each": acts}}, "$addToSet": {"tags": {"$each": ["ai", source]}}})
         return {"id": lead["id"], "created": False}
+    role = d.get("role") if d.get("role") in ("buyer", "seller", "renter", "landlord", "other") else None
+    if not wants.get("listing_type") and role in ("renter", "landlord"):
+        wants["listing_type"] = "rent"
     doc = Lead(name=(d.get("name") or "Unknown").strip()[:120] or "Unknown", phone=phone, email=d.get("email"), source_page=source, property_interest=(d.get("summary") or "")[:200] or None,
-               message=note_text[:2000], budget_inr=wants.get("budget_inr"), wants=wants, status=d.get("status_hint") or "new", notes=[note],
+               role=role, language=detect_language(note_text), message=note_text[:2000], budget_inr=wants.get("budget_inr"), wants=wants, status=d.get("status_hint") or "new", notes=[note],
                tags=["ai", source] + ([] if phone else ["needs_phone"]), activities=acts).model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     doc["updated_at"] = doc["updated_at"].isoformat()
@@ -5718,7 +5721,7 @@ def listing_item_from_video(v: dict) -> dict:
 
 def match_score(v: dict, item: dict) -> Optional[dict]:
     """How well a lead fits a priced listing. None = not a fit. Reasons are plain words for the CRM."""
-    if v.get("status") in ("closed", "lost"):
+    if v.get("status") in ("closed", "lost") or v.get("spam") or v.get("role") in ("seller", "landlord"):
         return None
     w = lead_wants(v)
     score, why = 0, []
@@ -5750,8 +5753,8 @@ def match_score(v: dict, item: dict) -> Optional[dict]:
             why.append(f"{w['bedrooms']} BHK wanted")
         else:
             score -= 15
-    if item.get("listing_type") and w["listing_type"] and item["listing_type"] != w["listing_type"]:
-        return None
+    if item.get("listing_type") and item["listing_type"] != (w["listing_type"] or "sale"):
+        return None                           # rent only goes to people who want to rent; everybody else is a buyer
     zone = (item.get("zone") or "").lower()
     low = " ".join(str(x) for x in (v.get("property_interest"), v.get("message")) if x).lower()
     if zone and (zone in [z.lower() for z in w["zones"]]):
@@ -5960,6 +5963,8 @@ async def ingest_lead(*, name: Optional[str], phone: Optional[str] = None, email
         existing = await db.leads.find_one({"email": em}, {"_id": 0})
     text = activity or (f"{source}: {msg[:200]}" if msg else f"Enquiry via {source}")
     w = norm_wants(wants)
+    if not w.get("listing_type") and role in ("renter", "landlord"):
+        w["listing_type"] = "rent"
     if existing:
         sets: dict = {"updated_at": now}
         if inbound:
