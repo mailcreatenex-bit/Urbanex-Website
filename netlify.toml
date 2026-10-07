@@ -3,7 +3,7 @@
 # After creating the Render service, replace the address below with its real one if it differs.
 [build]
   base = "frontend"
-  command = "yarn install --frozen-lockfile && yarn build"
+  command = "yarn install && yarn build"
   publish = "build"
 
 [build.environment]
