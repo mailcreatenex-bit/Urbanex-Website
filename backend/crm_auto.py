@@ -22,9 +22,9 @@ WHATSAPP_TOKEN = S.secret("WHATSAPP_TOKEN")
 WHATSAPP_PHONE_ID = S.os.environ.get("WHATSAPP_PHONE_ID", "").strip()
 IST = ZoneInfo("Asia/Kolkata")
 
-KINDS = ["follow_up_nudge", "revival", "missed_call", "wish", "price_drop", "reawaken", "digest", "visit_reminder", "reply"]
+KINDS = ["follow_up_nudge", "revival", "missed_call", "wish", "price_drop", "reawaken", "digest", "visit_reminder", "doc_reminder", "reply"]
 DEFAULT_MODES = {k: "ask" for k in KINDS} | {"digest": "off"}
-COOLDOWN_DAYS = {"follow_up_nudge": 2, "revival": 20, "missed_call": 1, "price_drop": 3, "reawaken": 14, "digest": 1, "visit_reminder": 0, "reply": 0, "wish": 0}
+COOLDOWN_DAYS = {"follow_up_nudge": 2, "revival": 20, "missed_call": 1, "price_drop": 3, "reawaken": 14, "digest": 1, "visit_reminder": 0, "doc_reminder": 1, "reply": 0, "wish": 0}
 
 T = {
     "follow_up_nudge": {"en": "Hi {name}, just checking in about {property}. Any questions I can help with? - {me}, Urbanex Realty",

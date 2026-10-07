@@ -1597,16 +1597,13 @@ async def book_visit(payload: VisitCreate, request: Request):
         await db.visits.insert_one(dict(visit))
     except DuplicateKeyError:
         raise HTTPException(409, "That slot was just taken, please pick another")
-    # every booking is also a lead in the pipeline
-    lead = Lead(name=payload.name, phone=payload.phone, email=payload.email, flags=flags, tags=["flagged"] if flags else [],
-                source_page="video_visit" if payload.mode == "video" else "site_visit",
-                property_interest=title,
-                message=f"{'Video call' if payload.mode == 'video' else 'Site visit'} requested for {when_text(payload.slot, 'Asia/Kolkata')}"
-                        + (f" (visitor timezone {payload.tz})" if payload.tz != "Asia/Kolkata" else ""),
-                status="site_visit").model_dump()
-    lead["created_at"] = lead["created_at"].isoformat()
-    lead["updated_at"] = lead["updated_at"].isoformat()
-    await db.leads.insert_one(lead)
+    # every booking is also a lead in the pipeline (joined with the lead we already have for this number)
+    r = await ingest_lead(name=payload.name, phone=payload.phone, email=payload.email, flags=flags, notify=False, status="site_visit",
+                          source="video_visit" if payload.mode == "video" else "site_visit", interest=title,
+                          message=f"{'Video call' if payload.mode == 'video' else 'Site visit'} requested for {when_text(payload.slot, 'Asia/Kolkata')}"
+                                  + (f" (visitor timezone {payload.tz})" if payload.tz != "Asia/Kolkata" else ""))
+    await db.leads.update_one({"id": r["id"], "status": {"$in": ["new", "contacted"]}}, {"$set": {"status": "site_visit"}})
+    await db.visits.update_one({"id": visit["id"]}, {"$set": {"lead_id": r["id"]}})
     kind = "Video call" if payload.mode == "video" else "Site visit"
     await notify_admin("visit", f"{kind} booked: {payload.name}",
                        f"{title} · {when_text(payload.slot)} · {payload.phone}", link="/admin/visits")
