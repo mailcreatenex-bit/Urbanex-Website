@@ -203,7 +203,8 @@ def test_length_is_enforced_with_one_rewrite(c, monkeypatch):
     short = news_text("Too short.")
     calls = ai(monkeypatch, lambda n, p: {"text": short if n == 1 else news_text(), "sources": []})
     r = c.post("/api/admin/posts/generate", json={"kind": "guide"}, headers=ADMIN)
-    assert r.status_code == 200 and len(calls) == 2 and "Your last body had 10 characters" in calls[1]["prompt"]
+    writing = [x for x in calls if "Translate this" not in x["prompt"]]  # the Bengali copy is a separate call
+    assert r.status_code == 200 and len(writing) == 2 and "Your last body had 10 characters" in writing[1]["prompt"]
     assert r.json()["category"] == "buying-guide"
     ai(monkeypatch, lambda n, p: {"text": short, "sources": []})
     assert c.post("/api/admin/posts/generate", json={"kind": "guide"}, headers=ADMIN).status_code == 502      # still unusable after the rewrite
