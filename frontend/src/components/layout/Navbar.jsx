@@ -20,12 +20,11 @@ const LINKS = [
   { to: "/contact", key: "nav.contact", tid: NAV.contact },
 ];
 
-// A floating glass dock: it slides away while you read downward and returns the moment you scroll up.
+// A floating glass dock, fixed at the top of every page.
 export default function Navbar() {
   const { user, logout, setLoginOpen } = useAuth();
   const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [solid, setSolid] = useState(false);
+    const [solid, setSolid] = useState(false);
   const [hover, setHover] = useState(null);
   const { pathname } = useLocation();
   const nav = useNavigate();
@@ -33,17 +32,16 @@ export default function Navbar() {
   const { ids } = useFavorites();
 
   useEffect(() => {
-    let raf = 0, last = window.scrollY;
+    let raf = 0;
     const on = () => { if (raf) return; raf = requestAnimationFrame(() => {
       raf = 0; const y = window.scrollY;
       setSolid(y > 40);
-      if (Math.abs(y - last) > 8) { setHidden(y > 220 && y > last); last = y; }
     }); };
     on();
     window.addEventListener("scroll", on, { passive: true });
     return () => { window.removeEventListener("scroll", on); if (raf) cancelAnimationFrame(raf); };
   }, []);
-  useEffect(() => { setOpen(false); setHidden(false); }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => { document.body.style.overflow = open ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [open]);
 
   const links = LINKS.map(l => ({ ...l, label: t(l.key) }));
@@ -53,9 +51,9 @@ export default function Navbar() {
 
   return (
     <>
-      <header className={`fixed top-0 inset-x-0 z-40 pointer-events-none transition-transform duration-500 ease-out ${hidden && !open ? "-translate-y-[120%]" : ""}`}>
+      <header className="fixed top-0 inset-x-0 z-40 pointer-events-none">
         <div className="max-w-[88rem] mx-auto px-3 md:px-6 pt-3">
-          <div className={`dock pointer-events-auto rounded-full flex items-center justify-between gap-3 pl-2 pr-2 md:pr-3 transition-all duration-500 ${solid ? "h-14" : "h-[60px] md:h-[68px]"}`}>
+          <div className={`dock pointer-events-auto rounded-full flex items-center justify-between gap-3 pl-0 pr-2 md:pr-3 transition-all duration-500 ${solid ? "h-14" : "h-[60px] md:h-[68px]"}`}>
             <Link to="/" data-testid={NAV.brand} className="flex items-center gap-3 group shrink-0" aria-label="Urbanex Realty, home">
               <span className="grid place-items-center h-16 w-16 md:h-[88px] md:w-[88px] -my-2 md:-my-3 rounded-full bg-white shadow-[0_0_0_3px_rgba(197,160,89,.45),0_10px_30px_-8px_rgba(0,0,0,.6)] overflow-hidden transition-transform group-hover:scale-105">
                 <img src="/brand/urbanex-logo.png" alt="" className="h-[108%] w-[108%] max-w-none object-contain"/>
