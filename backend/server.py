@@ -145,8 +145,11 @@ async def lifespan(_app: FastAPI):
     crm = asyncio.create_task(crm_loop())
     listings = asyncio.create_task(listings_loop())
     drive = asyncio.create_task(drive_loop())
+    ext = [asyncio.create_task(fn()) for fn in EXT_LOOPS]
     yield
     drive.cancel()
+    for t in ext:
+        t.cancel()
     crm.cancel()
     listings.cancel()
     reminders.cancel()
@@ -439,6 +442,20 @@ class Lead(BaseModel):
     lost_reason: Optional[str] = None
     activities: List[dict] = []                # calls, WhatsApp, e-mails, status changes
     wants: dict = {}                           # what they are looking for: bedrooms, type, zones, budget (from notes, calls, AI)
+    language: Optional[str] = None             # en | bn | hi: the language they write and speak
+    role: Optional[str] = None                 # buyer | seller | renter | landlord | other
+    spam: bool = False
+    spam_reasons: List[str] = []
+    sources: List[str] = []                    # every channel this person came through
+    last_inbound_at: Optional[str] = None      # the last time THEY contacted us
+    birthday: Optional[str] = None             # MM-DD, for greetings
+    tasks: List[dict] = []                     # promises from calls and meetings: {id, text, due, done}
+    deal_docs: List[dict] = []                 # document checklist for the deal
+    loan: dict = {}                            # bank hand-off and commission
+    owner_email: Optional[str] = None          # which team member looks after this lead
+    sequence: dict = {}                        # where the automatic follow-up sequence is
+    wishes_sent: List[str] = []                # festival / birthday greetings already queued, e.g. "ganesh-2026"
+    digest_opt_in: bool = False                # may receive the daily "new for you" message
     first_contacted_at: Optional[str] = None
     last_contacted_at: Optional[str] = None
     closed_at: Optional[str] = None
@@ -517,6 +534,12 @@ class LeadUpdate(BaseModel):
     deal_value_inr: Optional[int] = Field(default=None, ge=0, le=10**11)
     lost_reason: Optional[str] = Field(default=None, max_length=200)
     wants: Optional[dict] = None
+    spam: Optional[bool] = None
+    language: Optional[Literal["en", "bn", "hi"]] = None
+    role: Optional[Literal["buyer", "seller", "renter", "landlord", "other"]] = None
+    birthday: Optional[str] = Field(default=None, pattern=r"^\d{2}-\d{2}$")
+    owner_email: Optional[str] = Field(default=None, max_length=200)
+    digest_opt_in: Optional[bool] = None
 
 class NoteCreate(BaseModel):
     text: str = Field(min_length=1, max_length=5000)
@@ -901,14 +924,8 @@ async def create_lead(payload: LeadCreate, request: Request):
     rate_limit(request, "leads", 10)
     await require_human(request, payload.turnstile_token)
     flags = await track_submission(request, "lead", payload.phone)
-    lead = Lead(**{**payload.model_dump(), "flags": flags, "tags": ["flagged"] if flags else []}).model_dump()
-    lead["created_at"] = lead["created_at"].isoformat()
-    lead["updated_at"] = lead["updated_at"].isoformat()
-    await db.leads.insert_one(dict(lead))
-    bits = [b for b in (payload.phone, payload.email, payload.property_interest) if b]
-    await notify_admin("lead", f"New lead: {payload.name}" + (" (flagged)" if flags else ""), " · ".join(bits) or (payload.message or "")[:140],
-                       link="/admin/leads")
-    return {"ok": True, "id": lead["id"]}
+    r = await ingest_lead(name=payload.name, phone=payload.phone, email=payload.email, source=payload.source_page, interest=payload.property_interest, message=payload.message, flags=flags)
+    return {"ok": True, "id": r["id"]}
 
 LEAD_STAGES = ["new", "contacted", "site_visit", "negotiation", "closed", "lost"]
 
@@ -990,6 +1007,8 @@ async def admin_leads(request: Request, status: Optional[str] = None, source: Op
                       skip: int = Query(0, ge=0), limit: int = Query(1000, ge=1, le=1000)):
     await require_admin(request)
     query: dict = {}
+    if tag != "spam":
+        query["spam"] = {"$ne": True}                 # spam stays out of every list until you look for it
     if status:
         query["status"] = status
     if source:
@@ -1046,7 +1065,10 @@ async def update_lead(lid: str, patch: LeadUpdate, request: Request):
     lead = await db.leads.find_one({"id": lid}, {"_id": 0})
     if not lead:
         raise HTTPException(404, "Lead not found")
-    clearable = {"email", "property_interest", "priority", "next_follow_up", "follow_up_note", "budget_inr", "deal_value_inr", "lost_reason"}
+    clearable = {"email", "property_interest", "priority", "next_follow_up", "follow_up_note", "budget_inr", "deal_value_inr", "lost_reason", "birthday", "owner_email", "role", "language"}
+    if "spam" in data:
+        data["spam_reasons"] = [] if not data["spam"] else lead.get("spam_reasons") or ["Marked by you"]
+        data["tags"] = sorted((set(lead.get("tags") or []) - {"spam", "suspicious"}) | ({"spam"} if data["spam"] else set()))
     if "wants" in data:
         data["wants"] = norm_wants(data["wants"])
     update = {k: v for k, v in data.items() if v is not None or k in clearable}
@@ -4143,7 +4165,7 @@ async def crm_summary(request: Request):
     start, end = ist_day_bounds(now)
     ist = ZoneInfo("Asia/Kolkata")
     month_start = now.astimezone(ist).replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
-    leads = await db.leads.find({}, {"_id": 0, "notes": 0}).to_list(20000)
+    leads = [l for l in await db.leads.find({}, {"_id": 0, "notes": 0}).to_list(20000) if not l.get("spam")]
     vc = await visit_counts()
     stages = {s: 0 for s in LEAD_STAGES}
     new_today = overdue = due_today = hot = untouched = 0
@@ -4256,24 +4278,29 @@ async def crm_pass():
         await db.leads.update_one({"id": l["id"]}, {"$set": {"follow_up_notified_at": nowi}})
         body = " · ".join(b for b in (l.get("phone"), l.get("follow_up_note") or l.get("property_interest")) if b)
         await notify_admin("followup", f"Follow up: {l['name']}", body or "A follow-up is due", link="/admin/leads")
-    # speed to lead: a brand-new enquiry nobody has answered for 30 minutes
+    # speed to lead: a brand-new enquiry nobody has answered within a few minutes (default 5)
+    cfg = await crm_settings()
     since = (now - timedelta(hours=24)).isoformat()
-    cutoff = (now - timedelta(minutes=30)).isoformat()
+    cutoff = (now - timedelta(minutes=cfg["speed_minutes"])).isoformat()
     async for l in db.leads.find({"status": "new", "first_contacted_at": None, "waiting_notified_at": None, "created_at": {"$gte": since, "$lte": cutoff},
-                                  "tags": {"$ne": "imported"}}, {"_id": 0}).limit(10):
+                                  "tags": {"$ne": "imported"}, "spam": {"$ne": True}}, {"_id": 0}).limit(10):
         await db.leads.update_one({"id": l["id"]}, {"$set": {"waiting_notified_at": nowi}})
         mins = int((now - parse_dt(l["created_at"])).total_seconds() / 60)
-        await notify_admin("lead_waiting", f"{l['name']} has been waiting {mins} min", " · ".join(b for b in (l.get("phone"), l.get("property_interest")) if b) or "No reply yet", link="/admin/leads")
+        await notify_admin("lead_waiting", f"{l['name']} has been waiting {max(mins, 1)} min", " · ".join(b for b in (l.get("phone"), l.get("property_interest")) if b) or "No reply yet", link="/admin/leads")
 
 async def crm_loop():
     while True:
         try:
             await crm_pass()
+            last = await db.settings.find_one({"_id": "auto_merge"}) or {}
+            if not last.get("at") or parse_dt(last["at"]) < now_utc() - timedelta(hours=1):
+                await db.settings.update_one({"_id": "auto_merge"}, {"$set": {"at": now_utc().isoformat()}}, upsert=True)
+                await auto_merge_pass()
         except asyncio.CancelledError:
             raise
         except Exception as e:
             logging.warning(f"CRM pass failed: {type(e).__name__}: {e}")
-        await asyncio.sleep(600)
+        await asyncio.sleep(60)
 
 async def backfill_lead_keys():
     async for l in db.leads.find({"phone_key": {"$exists": False}, "phone": {"$ne": None}}, {"_id": 0, "id": 1, "phone": 1}).limit(20000):
@@ -5106,14 +5133,16 @@ async def crm_ai_text(payload: AiTextIn, request: Request):
         raise HTTPException(502, redact(str(e)))
 
 @api.post("/admin/crm/ai/notes")
-async def crm_ai_notes(request: Request, files: List[UploadFile] = File(...)):
-    """Photos of handwritten notes (or a PDF) -> draft leads to confirm."""
+async def crm_ai_notes(request: Request, files: List[UploadFile] = File(...), kind: str = Form(default="notes")):
+    """Photos of handwritten notes, visiting cards or a PDF -> draft leads to confirm."""
     await require_admin(request)
     if not gemini_enabled():
         raise HTTPException(503, "Add GEMINI_API_KEY to use the AI assistant")
     blobs = await read_uploads(files, max_files=6)
     try:
-        return await extract_people("photos of handwritten or printed notes with customer names, phone numbers and what they want", "", blobs)
+        what = ("photos of visiting (business) cards: the name, phone numbers and e-mail of each person; put their company and job title in the notes" if kind == "card"
+                else "photos of handwritten or printed notes with customer names, phone numbers and what they want")
+        return await extract_people(what, "", blobs)
     except RuntimeError as e:
         raise HTTPException(502, redact(str(e)))
 
@@ -5709,7 +5738,7 @@ def match_score(v: dict, item: dict) -> Optional[dict]:
 async def leads_for_listing(item: dict, limit: int = 25) -> List[dict]:
     if not item.get("price_inr"):
         return []
-    leads = await db.leads.find({"status": {"$nin": ["closed", "lost"]}}, {"_id": 0}).to_list(5000)
+    leads = await db.leads.find({"status": {"$nin": ["closed", "lost"]}, "spam": {"$ne": True}}, {"_id": 0}).to_list(5000)
     vc = await visit_counts()
     out = []
     for l in leads:
@@ -5767,6 +5796,201 @@ async def owner_listing_leads(pid: str, request: Request):
     people = [{"name": contacts.get(r["contact_id"], {}).get("name"), "phone": contacts.get(r["contact_id"], {}).get("phone"), "at": r["last_at"], "times": r.get("count", 1)}
               for r in rows if contacts.get(r["contact_id"])]
     return {"locked": False, "count": len(people), "people": people}
+
+# =============== CRM core for automation: one way in for every lead, spam filter, auto-merge, language ===============
+EXT_LOOPS: list = []        # background jobs added by the crm_* modules; started with the app
+LEAD_HOOKS: list = []       # async functions (lead_id, created: bool) run after a lead is saved (matching, assignment ...)
+
+async def crm_settings() -> dict:
+    doc = await db.settings.find_one({"_id": "crm"}, {"_id": 0}) or {}
+    return {"speed_minutes": 5, "spam_hide": True, **doc}
+
+def detect_language(text: str) -> Optional[str]:
+    """Which language is this written in? Script is a reliable hint for Bengali and Hindi; everything else counts as English."""
+    letters = [c for c in (text or "") if c.isalpha()]
+    if len(letters) < 3:
+        return None
+    bn = sum(1 for c in letters if "ঀ" <= c <= "৿")
+    hi = sum(1 for c in letters if "ऀ" <= c <= "ॿ")
+    if bn / len(letters) > 0.3:
+        return "bn"
+    if hi / len(letters) > 0.3:
+        return "hi"
+    return "en"
+
+SPAM_WORDS = re.compile(r"(?i)\b(crypto|bitcoin|casino|betting|seo service|backlink|loan offer|forex|viagra|escort|click here|whatsapp group|investment plan)\b")
+MASH = re.compile(r"(?i)(asdf|qwer|zxcv|hjkl|lorem)")
+JUNK_NAMES = {"test", "testing", "tester", "demo", "dummy", "fake", "abc", "abcd", "xyz", "xxx", "name", "user", "na", "none"}
+
+async def spam_check(name: str, phone: Optional[str], email: Optional[str], message: str, flags: List[str], raw_phone: Optional[str] = None) -> dict:
+    """Score a new enquiry. >= 60 is treated as spam (hidden from your lists, kept for review); >= 30 is marked suspicious."""
+    score, why = 0, []
+    nm = (name or "").strip()
+    if raw_phone and not phone:
+        score += 60
+        why.append("Not a real mobile number")
+    if nm and (len(re.sub(r"[^A-Za-zঀ-৿]", "", nm)) < 2 or re.fullmatch(r"[\d\W_]+", nm)):
+        score += 40
+        why.append("Name is not a name")
+    elif nm and (MASH.search(nm) or re.search(r"(.)\1{3,}", nm) or (re.findall(r"[a-z]+", nm.lower()) and all(t in JUNK_NAMES for t in re.findall(r"[a-z]+", nm.lower())))):
+        score += 40
+        why.append("Name looks made up")
+    if message and SPAM_WORDS.search(message):
+        score += 60
+        why.append("Message looks like an advert")
+    elif message and re.search(r"https?://|www\.", message, re.I):
+        score += 35
+        why.append("Message has a web link")
+    if "device_many_numbers" in flags or "ip_many_numbers" in flags:
+        score += 40
+        why.append("Many different numbers from one device")
+    if phone:
+        k = phone_key(phone)
+        recent = (now_utc() - timedelta(days=7)).isoformat()
+        names = {(l.get("name") or "").strip().lower() async for l in db.leads.find({"phone_key": k, "created_at": {"$gte": recent}}, {"_id": 0, "name": 1})}
+        if len(names | {nm.lower()}) >= 3:
+            score += 30
+            why.append("The same number under several names")
+        if nm:
+            ten = (now_utc() - timedelta(minutes=10)).isoformat()
+            if await db.leads.count_documents({"name": nm, "created_at": {"$gte": ten}}) >= 2:
+                score += 30
+                why.append("Repeated within minutes")
+    return {"score": min(score, 100), "spam": score >= 60, "suspicious": 30 <= score < 60, "reasons": why}
+
+async def merge_into(src: dict, dst: dict, by: str = "ai") -> None:
+    """Fold lead `src` into `dst`: history, tags, wants, tasks and links move over, then `src` is removed."""
+    now = now_utc().isoformat()
+    note = stamp_activity("merge", f"Merged with {src['name']} ({src.get('source_page')}, {str(src.get('created_at'))[:10]})", by=by)
+    wants = {**{k: v for k, v in (src.get("wants") or {}).items() if v not in (None, [], "")}, **{k: v for k, v in (dst.get("wants") or {}).items() if v not in (None, [], "")}}
+    sets: dict = {"updated_at": now, "created_at": min(str(src.get("created_at")), str(dst.get("created_at"))), "wants": wants}
+    for f in ("email", "budget_inr", "language", "birthday", "role"):
+        if not dst.get(f) and src.get(f):
+            sets[f] = src[f]
+    if not dst.get("phone") and src.get("phone"):
+        sets.update(phone=src["phone"], phone_key=src.get("phone_key"))
+    if src.get("last_inbound_at") and str(src["last_inbound_at"]) > str(dst.get("last_inbound_at") or ""):
+        sets["last_inbound_at"] = src["last_inbound_at"]
+    await db.leads.update_one({"id": dst["id"]}, {
+        "$push": {"notes": {"$each": src.get("notes") or []}, "activities": {"$each": (src.get("activities") or []) + [note]}, "tasks": {"$each": src.get("tasks") or []}},
+        "$addToSet": {"tags": {"$each": src.get("tags") or []}, "flags": {"$each": src.get("flags") or []}, "sources": {"$each": [src.get("source_page")] + (src.get("sources") or [])}},
+        "$set": sets})
+    await db.contacts.update_many({"lead_id": src["id"]}, {"$set": {"lead_id": dst["id"]}})
+    await db.leads.delete_one({"id": src["id"]})
+
+async def auto_merge_pass() -> int:
+    """The same person on three portals becomes one lead."""
+    groups: dict = {}
+    async for l in db.leads.find({"phone_key": {"$nin": [None, ""]}}, {"_id": 0}):
+        groups.setdefault(l["phone_key"], []).append(l)
+    merged = 0
+    for g in groups.values():
+        if len(g) < 2:
+            continue
+        g.sort(key=lambda l: str(l.get("created_at")))
+        keep = g[0]
+        for dup in g[1:]:
+            await merge_into(dup, keep)
+            keep = await db.leads.find_one({"id": keep["id"]}, {"_id": 0})
+            merged += 1
+    return merged
+
+async def ingest_lead(*, name: Optional[str], phone: Optional[str] = None, email: Optional[str] = None, source: str, interest: Optional[str] = None, message: Optional[str] = None,
+                      wants: Optional[dict] = None, role: Optional[str] = None, tags: Optional[List[str]] = None, flags: Optional[List[str]] = None, inbound: bool = True,
+                      language: Optional[str] = None, notify: bool = True, status: Optional[str] = None, follow_up: Optional[str] = None, follow_up_note: Optional[str] = None,
+                      activity: Optional[str] = None, imported: bool = False) -> dict:
+    """The one door every lead comes through (website, portals, WhatsApp, calls, notes): clean the number, join the person if we already know the number,
+    check for spam, detect the language, and tell the automations about it."""
+    now = now_utc().isoformat()
+    raw = (phone or "").strip() or None
+    clean = None
+    if raw:
+        try:
+            clean = clean_phone(raw)
+        except ValueError:
+            clean = None
+    em = (email or "").strip().lower() or None
+    if em and not re.match(EMAIL_RE, em):
+        em = None
+    nm = (name or "").strip()[:120] or "Unknown"
+    msg = (message or "").strip()[:2000] or None
+    tag_list = list(tags or [])
+    lang = language or detect_language(" ".join(x for x in (msg, interest) if x))
+    existing = None
+    if clean:
+        existing = await db.leads.find_one({"phone_key": phone_key(clean)}, {"_id": 0})
+    if not existing and em:
+        existing = await db.leads.find_one({"email": em}, {"_id": 0})
+    text = activity or (f"{source}: {msg[:200]}" if msg else f"Enquiry via {source}")
+    w = norm_wants(wants)
+    if existing:
+        sets: dict = {"updated_at": now}
+        if inbound:
+            sets["last_inbound_at"] = now
+        if em and not existing.get("email"):
+            sets["email"] = em
+        if clean and not existing.get("phone"):
+            sets.update(phone=clean, phone_key=phone_key(clean))
+        if existing.get("name") in (None, "", "Unknown") and nm != "Unknown":
+            sets["name"] = nm
+        if lang and not existing.get("language"):
+            sets["language"] = lang
+        if role and not existing.get("role"):
+            sets["role"] = role
+        old_w = existing.get("wants") or {}
+        sets["wants"] = {**{k: v for k, v in w.items() if v not in (None, [], "")}, **{k: v for k, v in old_w.items() if v not in (None, [], "")}}
+        if w.get("budget_inr") and not existing.get("budget_inr"):
+            sets["budget_inr"] = w["budget_inr"]
+        if interest:
+            sets["property_interest"] = interest[:200]
+        if follow_up:
+            sets.update(next_follow_up=follow_up, follow_up_note=follow_up_note, follow_up_notified_at=None)
+        acts = [stamp_activity("inquiry", text, channel=source)]
+        if existing.get("status") in ("closed", "lost") and inbound:
+            sets["status"] = "new"
+            acts.append(stamp_activity("status", f"{existing['status']} → new (they got in touch again)"))
+        note = {"id": new_id("note_"), "text": msg, "author": source, "created_at": now, "inbound": True} if msg else None
+        ops: dict = {"$set": sets, "$push": {"activities": {"$each": acts}}, "$addToSet": {"sources": source, "tags": {"$each": tag_list + (["flagged"] if flags else [])}, "flags": {"$each": flags or []}}}
+        if note:
+            ops["$push"]["notes"] = note
+        await db.leads.update_one({"id": existing["id"]}, ops)
+        if notify and inbound and not existing.get("spam"):
+            await notify_admin("lead", f"{existing.get('name') or nm} got in touch again", " · ".join(b for b in (source, interest, (msg or "")[:100]) if b), link=f"/admin/leads?lead={existing['id']}")
+        for h in LEAD_HOOKS:
+            spawn(h(existing["id"], False))
+        return {"id": existing["id"], "created": False, "spam": bool(existing.get("spam"))}
+    sp = await spam_check(nm, clean, em, msg or "", flags or [], raw_phone=raw)
+    if sp["spam"]:
+        tag_list.append("spam")
+    elif sp["suspicious"]:
+        tag_list.append("suspicious")
+    if flags:
+        tag_list.append("flagged")
+    doc = Lead(name=nm, phone=clean, email=em, source_page=source, property_interest=(interest or "")[:200] or None, message=msg, status=status or "new",
+               tags=sorted(set(tag_list)), flags=flags or [], wants=w, role=role, language=lang, sources=[source], spam=sp["spam"], spam_reasons=sp["reasons"],
+               last_inbound_at=now if inbound else None,
+               notes=([{"id": new_id("note_"), "text": msg, "author": source, "created_at": now, "inbound": True}] if msg else []),
+               activities=[stamp_activity("created", text, channel=source)]).model_dump()
+    if w.get("budget_inr"):
+        doc["budget_inr"] = w["budget_inr"]
+    doc["created_at"] = doc["created_at"].isoformat()
+    doc["updated_at"] = doc["updated_at"].isoformat()
+    doc["next_follow_up"], doc["follow_up_note"] = follow_up, follow_up_note
+    if imported:
+        doc["tags"] = sorted(set(doc["tags"]) | {"imported"})
+    await db.leads.insert_one(dict(doc))
+    if notify and not sp["spam"] and not imported:
+        bits = [b for b in (clean or raw, em, interest) if b]
+        await notify_admin("lead", f"New lead: {nm}" + (" (flagged)" if flags else " (check this one)" if sp["suspicious"] else ""), " · ".join(bits) or (msg or "")[:140], link=f"/admin/leads?lead={doc['id']}")
+    if not sp["spam"]:
+        for h in LEAD_HOOKS:
+            spawn(h(doc["id"], True))
+    return {"id": doc["id"], "created": True, "spam": sp["spam"], "spam_reasons": sp["reasons"]}
+
+import importlib  # noqa: E402
+for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff"):
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), _mod + ".py")):
+        importlib.import_module(_mod)          # these add their own routes and background jobs; they must load before the router is included
 
 # ---------- Include ----------
 app.include_router(api)

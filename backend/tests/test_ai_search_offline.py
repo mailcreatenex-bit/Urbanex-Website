@@ -107,7 +107,7 @@ def test_budget_phrase_becomes_a_coarse_band_not_an_exact_price(c):
     add(c, "BBBBBBBBBB2", "2BHK flat in Kalibazar", "Price: 90 lakh", days=2)
     ids, d = find(c, "flat under 50 lakh")
     assert ids == ["AAAAAAAAAA1"] and d["interpreted"]["budget"] == "b2"
-    assert "45" not in str(d) and "lakh" not in str(d["items"]).lower()
+    assert "price" not in str(d["items"]).lower() and "lakh" not in str(d["items"]).lower()      # (a bare "45" can show up inside a timestamp)
 
 
 # ------------------------------------------------------------------ Gemini reads descriptions
