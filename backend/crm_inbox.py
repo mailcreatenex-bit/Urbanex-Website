@@ -32,6 +32,7 @@ META_APP_SECRET = S.secret("META_APP_SECRET")
 META_PAGE_TOKEN = S.secret("META_PAGE_TOKEN")
 WHATSAPP_VERIFY_TOKEN = S.secret("WHATSAPP_VERIFY_TOKEN")
 WHATSAPP_APP_SECRET = S.secret("WHATSAPP_APP_SECRET")
+STOP_WORDS = re.compile(r"(?i)^\s*(stop|unsubscribe|cancel|বন্ধ|স্টপ|रोक|बंद)\s*[.!]*\s*$")
 
 PORTALS = {"99acres.com": "99acres", "magicbricks.com": "magicbricks", "housing.com": "housing", "nobroker.in": "nobroker", "commonfloor.com": "commonfloor",
            "olx.in": "olx", "indiamart.com": "indiamart", "sulekha.com": "sulekha", "quikr.com": "quikr", "facebookmail.com": "facebook", "facebook.com": "facebook"}
@@ -314,6 +315,8 @@ async def whatsapp_messages(request: Request):
                 frm = "+" + str(m.get("from", "")).lstrip("+")
                 res = await S.ingest_lead(name=names.get(m.get("from")), phone=frm, source="whatsapp", message=text, activity=f"WhatsApp: {text[:200]}")
                 await S.db.messages.insert_one({"id": S.new_id("msg_"), "lead_id": res["id"], "direction": "in", "channel": "whatsapp", "text": text, "at": S.now_utc().isoformat(), "wa_id": m.get("id")})
+                if kind == "text" and STOP_WORDS.match((text or "").strip()):      # "stop" means stop: no more automatic messages
+                    await S.db.leads.update_one({"id": res["id"]}, {"$set": {"opt_out": True}, "$addToSet": {"tags": "opt_out"}})
                 if await log_inbox("whatsapp", res, names.get(m.get("from")), frm, text or "", f"wa:{m.get('id')}"):
                     made += 1
     return {"ok": True, "messages": made}
