@@ -56,7 +56,7 @@ export default function InterestModal() {
               {busy ? t("common.loading") : t("interest.submit")}
             </button>
             <p className="text-[11px] text-urbanex-navy/50 leading-snug">
-              {t("interest.consent")} <Link to="/privacy" onClick={closeModal} className="underline">{t("interest.privacy")}</Link>
+              {t("interest.consent")} {t("interest.owner")} <Link to="/privacy" onClick={closeModal} className="underline">{t("interest.privacy")}</Link>
             </p>
           </form>
         ) : (

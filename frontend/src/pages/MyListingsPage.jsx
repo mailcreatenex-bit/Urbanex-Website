@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Copy, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Lock, MessageCircle, Pencil, Phone, Plus, Trash2, Users } from "lucide-react";
 import ListingForm from "@/components/owner/ListingForm";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/config";
@@ -16,6 +16,28 @@ const STATE = {
   expired: { label: "Offline", cls: "bg-gray-200 text-gray-600" },
 };
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "");
+
+function InterestedPeople({ listing }) {
+  const [d, setD] = useState(null);
+  useEffect(() => { api.get(`/owner/listings/${listing.id}/leads`).then(r => setD(r.data)).catch(() => setD({ locked: true, count: listing.interested_count || 0, people: [] })); }, [listing.id, listing.interested_count]);
+  if (!d) return null;
+  const tel = (p) => `tel:${String(p).replace(/[^\d+]/g, "")}`;
+  const wa = (p, name) => `https://wa.me/${String(p).replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${(name || "").split(" ")[0]}, you showed interest in "${listing.title}" on Urbanex Realty. Shall we talk?`)}`;
+  return (
+    <div className="mt-4 rounded-2xl border bg-white p-4" data-testid="interested-people">
+      <div className="flex items-center gap-2 text-sm font-medium text-urbanex-navy"><Users className="w-4 h-4 text-urbanex-gold"/> People interested in this listing ({d.count})</div>
+      {d.locked ? (
+        <div className="mt-2 flex items-start gap-2 text-sm text-urbanex-navy/70"><Lock className="w-4 h-4 mt-0.5 shrink-0"/>{d.count ? `${d.count} ${d.count === 1 ? "person has" : "people have"} pressed Interested. Their names and numbers unlock once your payment is confirmed.` : "Nobody yet. When someone presses Interested, you will see their name and number here once your payment is confirmed."}</div>
+      ) : d.people.length ? (
+        <ul className="mt-2 divide-y">{d.people.map((p, i) => (
+          <li key={i} className="py-2 flex flex-wrap items-center gap-3 text-sm"><div className="flex-1 min-w-[160px]"><b>{p.name}</b><div className="text-xs text-urbanex-navy/50">{p.phone} · {new Date(p.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div></div>
+            <a href={tel(p.phone)} className="inline-flex items-center gap-1 rounded-full bg-urbanex-navy text-urbanex-ivory px-3 py-1.5 text-xs"><Phone className="w-3 h-3"/> Call</a>
+            <a href={wa(p.phone, p.name)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full bg-[#25D366] text-white px-3 py-1.5 text-xs"><MessageCircle className="w-3 h-3"/> WhatsApp</a></li>
+        ))}</ul>
+      ) : <div className="mt-2 text-sm text-urbanex-navy/60">Nobody has pressed Interested yet. Adding a video and good photos helps.</div>}
+    </div>
+  );
+}
 
 function PayPanel({ listing, info, onDone }) {
   const [plan, setPlan] = useState(info.plans[0]?.id);
@@ -129,6 +151,7 @@ export default function MyListingsPage() {
                   </div>
                 </div>
               </div>
+              <InterestedPeople listing={l}/>
               {paying === l.id && info && <PayPanel listing={l} info={info} onDone={replace}/>}
             </div>
           );

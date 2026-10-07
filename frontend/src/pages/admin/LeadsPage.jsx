@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap } from "lucide-react";
+import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap, Target, PhoneCall, X } from "lucide-react";
 import { api, API_BASE } from "@/lib/api";
 import { ADMIN } from "@/constants/testIds";
 import Board, { LeadCard } from "@/components/admin/crm/Board";
 import Insights from "@/components/admin/crm/Insights";
 import LeadActions from "@/components/admin/crm/LeadActions";
 import LeadSheet from "@/components/admin/crm/LeadSheet";
+import AiAddSheet from "@/components/admin/crm/AiAddSheet";
+import MatchesPanel from "@/components/admin/crm/MatchesPanel";
+import CallsPanel from "@/components/admin/crm/CallsPanel";
 import { AddLeadSheet, ImportSheet, TemplatesSheet } from "@/components/admin/crm/CrmDialogs";
 import { SOURCES, STAGES, TEMP, dueLabel, followUpIn, inrShort, stageOf } from "@/lib/crm";
 
 const sel = "bg-white border border-urbanex-navy/15 rounded-full px-4 py-2 text-sm";
-const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["insights", "Insights", BarChart3]];
+const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["matches", "Matches", Target], ["calls", "Calls", PhoneCall], ["insights", "Insights", BarChart3]];
 
 function Stat({ label, value, sub, icon: Icon, tone = "", onClick, testId }) {
   return (
@@ -28,7 +31,7 @@ export default function LeadsPage() {
   const [sp, setSp] = useSearchParams();
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [tab, setTab] = useState("today");
+  const [tab, setTab] = useState(sp.get("match") ? "matches" : "today");
   const [q, setQ] = useState("");
   const [source, setSource] = useState("");
   const [temperature, setTemperature] = useState("");
@@ -36,6 +39,7 @@ export default function LeadsPage() {
   const [semantic, setSemantic] = useState("");
   const [semanticLoad, setSemanticLoad] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [aiInfo, setAiInfo] = useState(null);
   const [openId, setOpenId] = useState(sp.get("lead"));
   const [picked, setPicked] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -62,7 +66,12 @@ export default function LeadsPage() {
   }, []);
 
   const shown = aiResult || leads;
-  const open = useMemo(() => shown.find(l => l.id === openId) || leads.find(l => l.id === openId) || null, [shown, leads, openId]);
+  const [extra, setExtra] = useState(null);
+  useEffect(() => {      // a lead opened from Calls or Matches may not be in the current list
+    if (!openId || shown.some(l => l.id === openId) || leads.some(l => l.id === openId)) { setExtra(null); return; }
+    api.get("/admin/leads", { params: { limit: 1000 } }).then(r => setExtra((r.data || []).find(l => l.id === openId) || null)).catch(() => {});
+  }, [openId, shown, leads]);
+  const open = useMemo(() => shown.find(l => l.id === openId) || leads.find(l => l.id === openId) || extra, [shown, leads, openId, extra]);
   const openLead = (l) => { setOpenId(l.id); };
   const closeLead = () => { setOpenId(null); if (sp.get("lead")) { sp.delete("lead"); setSp(sp, { replace: true }); } };
 
@@ -93,9 +102,18 @@ export default function LeadsPage() {
   const runSemantic = async () => {
     if (!semantic.trim()) { setAiResult(null); return; }
     setSemanticLoad(true);
-    try { const { data } = await api.post("/admin/leads/semantic", { query: semantic }); setAiResult(data.matches || []); toast.success(`${data.matches?.length || 0} matches (${data.reasoning})`); setTab("table"); }
-    catch { toast.error("Search failed"); } finally { setSemanticLoad(false); }
+    try {
+      const { data } = await api.post("/admin/crm/ai/filter", { query: semantic });
+      setAiResult(data.matches || []); setAiInfo(data); setTab("table");
+    } catch { toast.error("Search failed"); } finally { setSemanticLoad(false); }
   };
+
+  const clearAi = () => { setAiResult(null); setAiInfo(null); setSemantic(""); };
+  const chips = aiInfo ? Object.entries(aiInfo.filters || {}).flatMap(([k, v]) => {
+    if (v == null || v === false || (Array.isArray(v) && !v.length)) return [];
+    const val = Array.isArray(v) ? v.join(", ") : v === true ? "yes" : k.startsWith("budget") ? inrShort(v) : String(v);
+    return [`${k.replace(/_/g, " ")}: ${val}`];
+  }) : [];
 
   const bulk = async (action, value) => {
     try { const { data } = await api.post("/admin/leads/bulk", { ids: picked, action, value }); toast.success(`${data.changed} updated`); setPicked([]); load(); loadSummary(); }
@@ -126,6 +144,7 @@ export default function LeadsPage() {
           <h1 className="font-display text-4xl text-urbanex-navy tracking-tight mt-1">Every enquiry, one place.</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button onClick={() => setDlg("ai")} data-testid="crm-ai-add" className="inline-flex items-center gap-1.5 rounded-full border border-urbanex-gold bg-urbanex-gold/10 px-5 py-2.5 text-sm hover:bg-urbanex-gold/20"><Sparkles className="w-4 h-4 text-urbanex-gold"/> Add with AI</button>
           <button onClick={() => setDlg("add")} data-testid="crm-add" className="inline-flex items-center gap-1.5 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-2.5 text-sm"><Plus className="w-4 h-4"/> Add lead</button>
           <button onClick={() => setDlg("import")} className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm hover:border-urbanex-gold"><FileUp className="w-4 h-4"/> Import</button>
           <button onClick={() => setDlg("templates")} className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm hover:border-urbanex-gold"><MessageSquareText className="w-4 h-4"/> Templates</button>
@@ -152,9 +171,17 @@ export default function LeadsPage() {
         <Sparkles className="w-5 h-5 text-urbanex-gold"/>
         <input data-testid={ADMIN.semanticInput} value={semantic} onChange={(e) => setSemantic(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runSemantic()}
           placeholder="Ask in plain words, e.g. “NRIs looking for a villa” or “people who want a plot near the highway”" className="flex-1 min-w-[260px] bg-transparent outline-none text-sm"/>
-        {aiResult && <button type="button" onClick={() => { setAiResult(null); setSemantic(""); }} className="text-xs text-gray-500 underline">Clear</button>}
+        {aiResult && <button type="button" onClick={clearAi} className="text-xs text-gray-500 underline">Clear</button>}
         <button data-testid={ADMIN.semanticRun} onClick={runSemantic} disabled={semanticLoad} className="bg-urbanex-navy text-urbanex-ivory rounded-full px-5 py-2 text-sm disabled:opacity-50">{semanticLoad ? "Searching…" : "Ask CRM"}</button>
       </div>
+
+      {aiInfo && (
+        <div className="mt-3 rounded-xl bg-urbanex-gold/10 border border-urbanex-gold/30 px-4 py-3 text-sm" data-testid="ai-filter-info">
+          <div className="flex items-start gap-2"><Sparkles className="w-4 h-4 mt-0.5 text-urbanex-gold shrink-0"/><div className="flex-1"><b>{aiInfo.total}</b> match{aiInfo.total === 1 ? "" : "es"}. {aiInfo.explain}{aiInfo.mode === "keywords" && <span className="text-xs text-gray-500"> (simple word match: AI is off or busy)</span>}
+            <div className="mt-1.5 flex flex-wrap gap-1.5">{chips.map(c => <span key={c} className="text-[11px] bg-white border rounded-full px-2.5 py-0.5">{c}</span>)}</div></div>
+            <button type="button" onClick={clearAi} aria-label="Clear" className="p-1 text-gray-500 hover:text-red-600"><X className="w-4 h-4"/></button></div>
+        </div>
+      )}
 
       {/* tabs + filters */}
       <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -242,9 +269,12 @@ export default function LeadsPage() {
         </div>
       )}
 
+      {tab === "matches" && <MatchesPanel initial={sp.get("match")} onOpenLead={(id) => setOpenId(id)}/>}
+      {tab === "calls" && <CallsPanel onOpenLead={(id) => setOpenId(id)}/>}
       {tab === "insights" && <Insights summary={summary}/>}
 
       <LeadSheet lead={open} onClose={closeLead} onChange={onChange} templates={templates} me={me}/>
+      <AiAddSheet open={dlg === "ai"} onClose={() => setDlg(null)} onDone={() => { load(); loadSummary(); }}/>
       <AddLeadSheet open={dlg === "add"} onClose={() => setDlg(null)} onCreated={(l) => { setDlg(null); load(); loadSummary(); setOpenId(l.id); }} onOpenExisting={(id) => setOpenId(id)}/>
       <ImportSheet open={dlg === "import"} onClose={() => setDlg(null)} onDone={() => { load(); loadSummary(); }}/>
       <TemplatesSheet open={dlg === "templates"} onClose={() => setDlg(null)} templates={templates} onSaved={setTemplates}/>

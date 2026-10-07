@@ -114,6 +114,10 @@ def test_handwritten_notes_photo_goes_to_the_model(c, monkeypatch):
     assert c.post("/api/admin/crm/ai/notes", files=[("files", ("x.png", b"not an image", "image/png"))], headers=ADMIN).status_code == 415
 
 
+def test_spoken_place_names_snap_to_ours():
+    assert server.snap_zone("Godaik") == "Goda" and server.snap_zone("Totally Elsewhere") == "Totally Elsewhere"
+
+
 def test_recording_file_name_parsing():
     assert server.parse_recording_name("Call with Priya Roy +91 98301 55667_20261003_101500.m4a") == {"phone": "+919830155667", "name": "Priya Roy"}
     assert server.parse_recording_name("Incoming_9830155667_20261003.mp3") == {"phone": "+919830155667", "direction": "incoming"}
