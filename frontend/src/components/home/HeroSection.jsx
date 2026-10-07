@@ -13,6 +13,7 @@ import Counter from "@/components/fx/Counter";
 // On top sit depth layers that also react to the cursor, a finger drag or the phone's tilt (Android).
 // The poster is the film's own first frame (32 KB), so when the video fades in nothing visibly changes.
 export const HERO_IMG = "/videos/hero-poster.jpg";
+const PLAY_END = 0.62;     // the film has finished playing here; the whole stage then fades away instead of sitting paused
 const HEADLINE = ["Homes", "worth", "every", "rupee", "—", "chosen,", "built,", "delivered."];
 
 function useDepthPointer(ref) {
@@ -58,7 +59,8 @@ export default function HeroSection() {
 
   // 0 when the hero reaches the top, 1 when the pinned stage is about to be released: the whole film plays in between
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.5, 0.85], [1, 0.9, 0]);
+  const stageOpacity = useTransform(scrollYProgress, [PLAY_END, 0.9], [1, 0]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.3, 0.6], [1, 0.9, 0]);
   const contentY = useTransform(scrollYProgress, [0, 1], [0, -60]);
   const hintOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
   const chipsOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
@@ -77,7 +79,7 @@ export default function HeroSection() {
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     const v = videoRef.current;
     if (!v || !v.duration) return;
-    target.current = Math.max(0, Math.min(v.duration - 0.05, p * v.duration));
+    target.current = Math.max(0, Math.min(v.duration - 0.05, Math.min(1, p / PLAY_END) * v.duration));
     if (!loop.current) loop.current = requestAnimationFrame(chase);
   });
 
@@ -92,7 +94,7 @@ export default function HeroSection() {
       const onReady = () => {
         setReady(true);
         const p = scrollYProgress.get();
-        if (v.duration) { target.current = p * v.duration; try { v.currentTime = target.current; } catch { /* ignore */ } }
+        if (v.duration) { target.current = Math.min(1, p / PLAY_END) * v.duration; try { v.currentTime = target.current; } catch { /* ignore */ } }
       };
       v.addEventListener("loadeddata", onReady, { once: true });
       v.preload = "auto";   // buffer the whole film so scrubbing in both directions is instant
@@ -116,9 +118,9 @@ export default function HeroSection() {
   const depth = (k) => ({ transform: `translate3d(calc(var(--mx, 0) * ${k}px), calc(var(--my, 0) * ${k * 0.7}px), 0)` });
 
   return (
-    <section ref={ref} data-testid={HOME.hero} className={`relative bg-urbanex-navy ${video ? "h-[220vh]" : "h-[100svh]"}`} style={{ "--mx": 0, "--my": 0 }}>
+    <section ref={ref} data-testid={HOME.hero} className={`relative bg-urbanex-navy ${video ? "h-[200vh]" : "h-[100svh]"}`} style={{ "--mx": 0, "--my": 0 }}>
       {/* The stage stays pinned while you scroll through the section */}
-      <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
+      <motion.div style={{ opacity: video ? stageOpacity : 1 }} className="sticky top-0 h-[100svh] w-full overflow-hidden">
         {/* Layer 1: poster photo, then the scroll-driven video fades in over it */}
         <div className="hero-layer absolute inset-[-3%]" style={depth(-12)}>
           <img src={HERO_IMG} alt="" fetchpriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover"/>
@@ -196,7 +198,7 @@ export default function HeroSection() {
             <ChevronDown className="w-4 h-4 text-urbanex-gold animate-bounce"/>
           </motion.div>
         )}
-      </div>
+      </motion.div>
     </section>
   );
 }

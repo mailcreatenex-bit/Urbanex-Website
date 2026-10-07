@@ -55,9 +55,10 @@ export default function Concierge() {
   const chips = [u.bedrooms && `${u.bedrooms} BHK`, u.property_type, u.zone, u.listing_type === "rent" ? "for rent" : null, u.max_budget_inr && `up to ₹${(u.max_budget_inr / 100000).toLocaleString("en-IN", { maximumFractionDigits: 1 })} L`, out?.vastu && "Vastu-first"].filter(Boolean);
 
   return (
-    <section id="concierge" className="sec-dark" data-testid="concierge">
+    <section id="concierge" className="sec-dark relative z-10" data-testid="concierge"
+      style={{ marginTop: "-50vh", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 40vh)", maskImage: "linear-gradient(to bottom, transparent 0, #000 40vh)" }}>   {/* rises over the end of the hero film, which fades out behind it */}
       <div className="aurora"/>
-      <div className="max-w-5xl mx-auto px-5 md:px-10 py-24 md:py-32 text-center">
+      <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.9, ease: "easeOut" }} className="max-w-5xl mx-auto px-5 md:px-10 py-24 md:py-32 text-center" style={{ paddingTop: "calc(30vh + 3rem)" }}>
         <div className="chapter" data-n="01">Ask Urbanex</div>
         <h2 className="mt-5 font-display text-5xl md:text-7xl leading-[0.98] tracking-tight text-balance">Just <em className="italic text-gold-gradient">say</em> what you want.</h2>
         <p className="mt-5 text-urbanex-ivory/65 max-w-xl mx-auto">Speak or type, in English, বাংলা or हिन्दी. We understand the area, the size and the budget, and show you what fits.</p>
@@ -118,7 +119,7 @@ export default function Concierge() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
