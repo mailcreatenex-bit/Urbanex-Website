@@ -461,7 +461,7 @@ async def reawaken_pass() -> int:
         if (now - last).days < 30:
             continue
         v = S.lead_view(l)
-        best = max(((S.match_score(v, it) or {"score": 0})["score"], it) for it in listings)
+        best = max((((S.match_score(v, it) or {"score": 0})["score"], it) for it in listings), key=lambda x: x[0])
         if best[0] >= 45 and await queue_message(l["id"], "reawaken", listing_ref=f"{best[1]['kind']}:{best[1]['id']}", property=best[1]["title"][:80]):
             made += 1
             if made >= 30:
