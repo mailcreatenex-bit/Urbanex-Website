@@ -61,8 +61,8 @@ export default function LeadActions({ lead, templates, me, onChange, size = "sm"
                 <div key={t.id} className="px-3 py-2 rounded-lg hover:bg-gray-50">
                   <div className="font-medium text-urbanex-navy">{t.label}</div>
                   <div className="mt-1 flex gap-2">
-                    {t.en && <button type="button" onClick={() => whatsapp(t, "en")} className="text-xs rounded-full border px-2.5 py-0.5 hover:border-[#25D366]">English</button>}
-                    {t.bn && <button type="button" onClick={() => whatsapp(t, "bn")} className="text-xs rounded-full border px-2.5 py-0.5 hover:border-[#25D366]">বাংলা</button>}
+                    {t.en && <button type="button" onClick={() => whatsapp(t, "en")} className={`text-xs rounded-full border px-2.5 py-0.5 hover:border-[#25D366] ${lead?.language !== "bn" ? "border-[#25D366]" : ""}`}>English</button>}
+                    {t.bn && <button type="button" onClick={() => whatsapp(t, "bn")} className={`text-xs rounded-full border px-2.5 py-0.5 hover:border-[#25D366] ${lead?.language === "bn" ? "border-[#25D366]" : ""}`}>বাংলা</button>}
                   </div>
                 </div>
               ))}

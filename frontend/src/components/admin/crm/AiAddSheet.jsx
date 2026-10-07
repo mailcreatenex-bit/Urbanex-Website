@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AudioLines, Camera, FileText, Mic, Sparkles, Square, Trash2 } from "lucide-react";
+import { AudioLines, BookUser, Camera, CreditCard, FileText, Mic, Sparkles, Square, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { inrShort } from "@/lib/crm";
 
 const inp = "w-full border rounded-lg px-3 py-2 text-sm bg-white";
 const SR = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
-const TABS = [["voice", "Speak", Mic], ["type", "Type or paste", FileText], ["notes", "Photo of notes", Camera], ["calls", "Call recordings", AudioLines]];
+const TABS = [["voice", "Speak", Mic], ["type", "Type or paste", FileText], ["notes", "Photo of notes", Camera], ["card", "Business card", CreditCard], ["contacts", "Phone contacts", BookUser], ["calls", "Call recordings", AudioLines]];
 const err = (e, f) => { const d = e?.response?.data?.detail; return typeof d === "string" ? d : f; };
 
 // Drafts the AI found: check and fix them, then save into the CRM.
@@ -57,6 +57,33 @@ function Drafts({ drafts, setDrafts, source, onSaved }) {
   );
 }
 
+// Pick people from the address book (Chrome on Android) or load a .vcf file, and tag where you met them.
+function Contacts({ onDone }) {
+  const [met, setMet] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+  const canPick = typeof navigator !== "undefined" && "contacts" in navigator && "ContactsManager" in window;
+  const send = async (body) => {
+    setBusy(true);
+    try { const { data } = await api.post("/admin/crm/contacts/import", { ...body, met: met.trim() || "phone contacts" }); toast.success(`${data.created} added, ${data.merged} already there${data.skipped ? `, ${data.skipped} had no number` : ""}`); onDone?.(); }
+    catch (e) { toast.error(err(e, "Could not import")); } finally { setBusy(false); }
+  };
+  const pick = async () => {
+    try { const picked = await navigator.contacts.select(["name", "tel", "email"], { multiple: true }); if (picked.length) await send({ contacts: picked.map(c => ({ name: (c.name || [])[0] || null, tel: c.tel || [], email: c.email || [] })) }); }
+    catch { toast.error("Could not open your contacts"); }
+  };
+  const fromFile = async (e) => { const f = e.target.files?.[0]; if (!f) return; const vcf = await f.text(); e.target.value = ""; await send({ vcf }); };
+  return (
+    <div className="space-y-3" data-testid="ai-contacts">
+      <p className="text-xs text-gray-500">Bring in people you already know. Say where you met them (for example "Kolkata property fair") so you can find them later and write to them the right way.</p>
+      <input className={inp} value={met} onChange={(e) => setMet(e.target.value)} placeholder="Where did you meet them?" maxLength={60} data-testid="contacts-met"/>
+      {canPick && <button type="button" onClick={pick} disabled={busy} className="w-full rounded-xl border-2 border-dashed p-6 text-center hover:border-urbanex-gold"><BookUser className="w-7 h-7 mx-auto text-urbanex-gold"/><div className="mt-2 text-sm">Choose from my phone contacts</div></button>}
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="w-full rounded-xl border-2 border-dashed p-6 text-center hover:border-urbanex-gold"><FileText className="w-7 h-7 mx-auto text-urbanex-gold"/><div className="mt-2 text-sm">Upload a contacts file (.vcf)</div><div className="text-[11px] text-gray-400 mt-1">In the Contacts app: select people, then Share or Export.</div></button>
+      <input ref={fileRef} type="file" accept=".vcf,text/vcard,text/x-vcard" className="hidden" onChange={fromFile} data-testid="contacts-file"/>
+    </div>
+  );
+}
+
 function Speak({ onText }) {
   const [lang, setLang] = useState("en-IN");
   const [on, setOn] = useState(false);
@@ -98,7 +125,7 @@ export default function AiAddSheet({ open, onClose, onDone }) {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [phone, setPhone] = useState("");
-  const notesRef = useRef(null), callsRef = useRef(null);
+  const notesRef = useRef(null), cardRef = useRef(null), callsRef = useRef(null);
 
   useEffect(() => { if (open) { setDrafts(null); setResults(null); } }, [open, tab]);
 
@@ -107,10 +134,10 @@ export default function AiAddSheet({ open, onClose, onDone }) {
     try { const { data } = await api.post("/admin/crm/ai/text", { text: t, kind }); setDrafts(data.people); }
     catch (e) { toast.error(err(e, "The AI could not read that")); } finally { setBusy(false); }
   };
-  const fromPhotos = async (e) => {
+  const fromPhotos = async (e, kind) => {
     const files = [...e.target.files]; if (!files.length) return;
-    const fd = new FormData(); files.forEach(f => fd.append("files", f));
-    setBusy(true); setDrafts(null); setSource("handwritten");
+    const fd = new FormData(); files.forEach(f => fd.append("files", f)); if (kind === "card") fd.append("kind", "card");
+    setBusy(true); setDrafts(null); setSource(kind === "card" ? "business_card" : "handwritten");
     try { const { data } = await api.post("/admin/crm/ai/notes", fd, { headers: { "Content-Type": "multipart/form-data" } }); setDrafts(data.people); }
     catch (er) { toast.error(err(er, "The AI could not read those photos")); } finally { setBusy(false); e.target.value = ""; }
   };
@@ -142,9 +169,17 @@ export default function AiAddSheet({ open, onClose, onDone }) {
             <div className="space-y-3">
               <p className="text-xs text-gray-500">Photograph a page of handwritten notes (names, phone numbers, what they want). Lay it flat in good light. Up to 6 photos.</p>
               <button type="button" onClick={() => notesRef.current?.click()} disabled={busy} className="w-full rounded-xl border-2 border-dashed p-8 text-center hover:border-urbanex-gold"><Camera className="w-7 h-7 mx-auto text-urbanex-gold"/><div className="mt-2 text-sm">Take a photo or choose pictures</div></button>
-              <input ref={notesRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={fromPhotos} data-testid="ai-notes-file"/>
+              <input ref={notesRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={(e) => fromPhotos(e)} data-testid="ai-notes-file"/>
             </div>
           )}
+          {tab === "card" && (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500">Photograph a visiting card (or several). The name, number, e-mail and company become a lead.</p>
+              <button type="button" onClick={() => cardRef.current?.click()} disabled={busy} className="w-full rounded-xl border-2 border-dashed p-8 text-center hover:border-urbanex-gold"><CreditCard className="w-7 h-7 mx-auto text-urbanex-gold"/><div className="mt-2 text-sm">Take a photo of the card</div></button>
+              <input ref={cardRef} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={(e) => fromPhotos(e, "card")} data-testid="ai-card-file"/>
+            </div>
+          )}
+          {tab === "contacts" && <Contacts onDone={() => { onDone?.(); onClose(); }}/>}
           {tab === "calls" && (
             <div className="space-y-3">
               <p className="text-xs text-gray-500">Upload call recordings (MP3, M4A, WAV, OGG, up to 14 MB each). The number is read from the file name, or from the call. Calls from your Google Drive folder are picked up by themselves, see the Calls tab.</p>

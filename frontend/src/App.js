@@ -55,6 +55,9 @@ const LandScanPage = lazy(() => import("@/pages/utilities/land/ScanPage"));
 const KhatianReaderPage = lazy(() => import("@/pages/utilities/land/KhatianReaderPage"));
 const LandReportPage = lazy(() => import("@/pages/utilities/land/LandReportPage"));
 const LandReportsAdminPage = lazy(() => import("@/pages/admin/LandReportsAdminPage"));
+const TeamPage = lazy(() => import("@/pages/admin/TeamPage"));
+const BookVisitPage = lazy(() => import("@/pages/BookVisitPage"));
+const WeeklyReportPage = lazy(() => import("@/pages/WeeklyReportPage"));
 const ListPropertyPage = lazy(() => import("@/pages/ListPropertyPage"));
 const MyListingsPage = lazy(() => import("@/pages/MyListingsPage"));
 
@@ -99,6 +102,8 @@ function AppRouter() {
         <Route path="/utilities/banglar-bhumi/area" element={<Navigate to="/utilities/plot-area" replace/>}/>
         <Route path="/utilities/banglar-bhumi/value" element={<Navigate to="/utilities/land-value" replace/>}/>
         <Route path="/utilities/banglar-bhumi/scan" element={<Navigate to="/utilities/document-scanner" replace/>}/>
+        <Route path="/book-visit/:token" element={<BookVisitPage/>}/>
+        <Route path="/report/:token" element={<WeeklyReportPage/>}/>
         <Route path="/list-your-property" element={<ListPropertyPage/>}/>
         <Route path="/my-listings" element={<MyListingsPage/>}/>
         <Route path="/terms" element={<TermsPage/>}/>
@@ -118,6 +123,7 @@ function AppRouter() {
         <Route path="push" element={<PushAdminPage/>}/>
         <Route path="listings" element={<ListingsAdminPage/>}/>
         <Route path="land-reports" element={<LandReportsAdminPage/>}/>
+        <Route path="team" element={<TeamPage/>}/>
         <Route path="reports" element={<ReportsPage/>}/>
         <Route path="invoices" element={<InvoicePage/>}/>
       </Route>

@@ -75,6 +75,8 @@ export default function ListingsAdminPage() {
     try { await api.post(`/admin/listings/${l.id}/action`, { action, days }); toast.success("Done"); load(); } catch { toast.error("Failed"); }
   };
 
+  const recheck = async (l) => { try { await api.post(`/admin/listings/${l.id}/quality`); load(); } catch { toast.error("Could not check"); } };
+
   const waiting = data.items.filter(l => l.listing_state === "payment_submitted" || l.payments.some(p => p.status === "submitted"));
 
   return (
@@ -126,7 +128,13 @@ export default function ListingsAdminPage() {
               const paid = l.payments.filter(p => p.status === "confirmed").reduce((a, p) => a + p.amount, 0);
               return (
                 <tr key={l.id} className="border-b last:border-0">
-                  <td className="p-3"><div className="flex items-center gap-3">{l.image ? <img src={assetUrl(l.image, 160)} alt="" className="w-14 h-10 object-cover rounded"/> : <div className="w-14 h-10 bg-gray-100 rounded"/>}<div><div className="font-medium">{l.title}</div><div className="text-xs text-gray-400">{l.zone} · {l.property_type}</div></div></div></td>
+                  <td className="p-3"><div className="flex items-center gap-3">{l.image ? <img src={assetUrl(l.image, 160)} alt="" className="w-14 h-10 object-cover rounded"/> : <div className="w-14 h-10 bg-gray-100 rounded"/>}<div><div className="font-medium">{l.title}</div><div className="text-xs text-gray-400">{l.zone} · {l.property_type}</div>
+                    {l.quality && (
+                      <div className="mt-1" data-testid={`quality-${l.id}`}>
+                        <span className={`text-[10px] rounded-full px-2 py-0.5 ${l.quality.score >= 80 ? "bg-emerald-100 text-emerald-700" : l.quality.score >= 50 ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-700"}`}>Quality {l.quality.score}</span>
+                        <button onClick={() => recheck(l)} className="ml-2 text-[10px] text-gray-400 underline">check again</button>
+                        {l.quality.flags.map(f => <div key={f.id} className={`text-[11px] mt-0.5 ${f.level === "high" ? "text-red-600" : "text-amber-700"}`}>⚠ {f.text}</div>)}
+                      </div>)}</div></div></td>
                   <td><div>{l.owner?.name}</div><div className="flex gap-2 text-xs mt-0.5"><a href={telLink(l.owner?.phone)} className="inline-flex items-center gap-1 underline"><Phone className="w-3 h-3"/>{l.owner?.phone}</a><a href={waLink(l.owner?.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#128C7E]"><MessageCircle className="w-3 h-3"/></a></div></td>
                   <td><span className={`text-xs rounded-full px-2.5 py-1 ${STATE_CLS[l.listing_state] || ""}`}>{(l.listing_state || "").replace("_", " ")}</span></td>
                   <td className="text-xs">{when(l.listing_state === "paid" ? l.paid_until : l.trial_ends_at)}</td>

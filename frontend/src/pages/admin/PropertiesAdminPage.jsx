@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Camera, Plus, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { assetUrl, inr } from "@/lib/config";
 import ImageUpload from "@/components/admin/ImageUpload";
@@ -50,6 +50,23 @@ export default function PropertiesAdminPage() {
   const load = useCallback(() => api.get("/admin/properties").then(r => setItems(r.data)).catch(() => {}), []);
   useEffect(() => { load(); api.get("/config/public").then(r => setZones(r.data.zones || [])).catch(() => {}); }, [load]);
 
+  const photoRef = useRef(null);
+  const [photoLead, setPhotoLead] = useState(false);
+  // a photo of a hoarding or flyer becomes a filled-in draft; nothing is saved until you press Save
+  const fromPhoto = async (e) => {
+    const files = [...e.target.files]; if (!files.length) return;
+    const fd = new FormData(); files.forEach(f => fd.append("files", f)); fd.append("create_seller_lead", photoLead ? "true" : "false");
+    setBusy(true);
+    try {
+      const { data } = await api.post("/admin/properties/from-photo", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const d = data.draft;
+      setForm({ ...BLANK, title: d.title || "", listing_type: d.listing_type, property_type: d.property_type || "apartment", zone: d.zone || "", address: d.address || "", bedrooms: d.bedrooms ?? "", bathrooms: d.bathrooms ?? "", area_sqft: d.area_sqft ?? "", price_inr: d.price_inr ?? "", description: d.description || "" });
+      toast.success(d.unclear?.length ? `Filled in. Please check: ${d.unclear.join(", ")}` : "Filled in from the photo. Check it, then save.");
+      if (data.seller_lead_id) toast.message(`${d.contact_name || "The owner"} was added to the CRM as a seller`);
+    } catch (er) { toast.error(typeof er?.response?.data?.detail === "string" ? er.response.data.detail : "Could not read that photo"); }
+    finally { setBusy(false); e.target.value = ""; }
+  };
+
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
   const save = async (e) => {
@@ -91,8 +108,13 @@ export default function PropertiesAdminPage() {
     <div className="p-6 md:p-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl text-urbanex-navy">Properties</h1>
+        <div className="flex items-center gap-3">
+        <label className="hidden md:flex items-center gap-1.5 text-xs text-gray-500"><input type="checkbox" checked={photoLead} onChange={(e) => setPhotoLead(e.target.checked)}/> also save the phone number as a seller</label>
+        <button onClick={() => photoRef.current?.click()} disabled={busy} data-testid="property-from-photo" className="inline-flex items-center gap-2 border border-urbanex-gold px-5 py-2.5 rounded-full text-sm"><Camera className="w-4 h-4 text-urbanex-gold"/> From a photo</button>
+        <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={fromPhoto}/>
         <button onClick={() => setForm({ ...BLANK })} data-testid="property-new"
           className="inline-flex items-center gap-2 bg-urbanex-navy text-urbanex-ivory px-5 py-2.5 rounded-full text-sm"><Plus className="w-4 h-4"/> New property</button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border overflow-x-auto">

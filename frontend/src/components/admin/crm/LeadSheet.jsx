@@ -4,6 +4,7 @@ import { Mic, Sparkles, StopCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import LeadActions from "@/components/admin/crm/LeadActions";
+import LeadExtras from "@/components/admin/crm/LeadExtras";
 import { SOURCES, STAGES, TEMP, dueLabel, followUpIn, fromLocalInput, inrShort, toLocalInput, waLink, when } from "@/lib/crm";
 
 const inp = "w-full border rounded-lg px-3 py-2 text-sm bg-white";
@@ -116,6 +117,8 @@ export default function LeadSheet({ lead, onClose, onChange, templates, me }) {
               style={lead.status === s.v ? { background: s.color } : undefined}>{s.label}</button>
           ))}
         </div>
+
+        <LeadExtras lead={lead} onChange={onChange}/>
 
         {/* follow-up */}
         <div className="mt-6 rounded-xl border bg-white p-4" data-testid="crm-followup">

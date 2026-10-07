@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap, Target, PhoneCall, X } from "lucide-react";
+import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap, Target, PhoneCall, X, Inbox, Send, Bot, ShieldAlert } from "lucide-react";
 import { api, API_BASE } from "@/lib/api";
 import { ADMIN } from "@/constants/testIds";
 import Board, { LeadCard } from "@/components/admin/crm/Board";
@@ -11,11 +11,16 @@ import LeadSheet from "@/components/admin/crm/LeadSheet";
 import AiAddSheet from "@/components/admin/crm/AiAddSheet";
 import MatchesPanel from "@/components/admin/crm/MatchesPanel";
 import CallsPanel from "@/components/admin/crm/CallsPanel";
+import PlanPanel from "@/components/admin/crm/PlanPanel";
+import InsightsExtra from "@/components/admin/crm/InsightsExtra";
+import { AutomationPanel, InboxPanel, OutboxPanel } from "@/components/admin/crm/AutomationPanels";
+import { useAuth } from "@/context/AuthContext";
 import { AddLeadSheet, ImportSheet, TemplatesSheet } from "@/components/admin/crm/CrmDialogs";
 import { SOURCES, STAGES, TEMP, dueLabel, followUpIn, inrShort, stageOf } from "@/lib/crm";
 
 const sel = "bg-white border border-urbanex-navy/15 rounded-full px-4 py-2 text-sm";
-const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["matches", "Matches", Target], ["calls", "Calls", PhoneCall], ["insights", "Insights", BarChart3]];
+const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["matches", "Matches", Target], ["calls", "Calls", PhoneCall], ["insights", "Insights", BarChart3], ["inbox", "Inbox", Inbox], ["outbox", "Messages", Send], ["auto", "Automation", Bot]];
+const STAFF_TABS = ["today", "board", "table", "matches"];
 
 function Stat({ label, value, sub, icon: Icon, tone = "", onClick, testId }) {
   return (
@@ -29,6 +34,9 @@ function Stat({ label, value, sub, icon: Icon, tone = "", onClick, testId }) {
 
 export default function LeadsPage() {
   const [sp, setSp] = useSearchParams();
+  const { user } = useAuth();
+  const tabs = user?.is_admin ? TABS : TABS.filter(t => STAFF_TABS.includes(t[0]));
+  const [spam, setSpam] = useState(false);
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState(null);
   const [tab, setTab] = useState(sp.get("match") ? "matches" : "today");
@@ -53,9 +61,10 @@ export default function LeadsPage() {
     if (temperature) params.temperature = temperature;
     if (q) params.q = q;
     if (sort !== "newest") params.sort = sort;
+    if (spam) params.tag = "spam";
     const { data } = await api.get("/admin/leads", { params });
     setLeads(data || []);
-  }, [source, temperature, q, sort]);
+  }, [source, temperature, q, sort, spam]);
   const loadSummary = useCallback(() => api.get("/admin/crm/summary").then(r => setSummary(r.data)).catch(() => {}), []);
 
   useEffect(() => { const h = setTimeout(() => { setAiResult(null); load().catch(() => toast.error("Could not load leads")); }, 200); return () => clearTimeout(h); }, [load]);
@@ -186,7 +195,7 @@ export default function LeadsPage() {
       {/* tabs + filters */}
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-urbanex-navy/15 overflow-hidden bg-white">
-          {TABS.map(([k, label, Icon]) => (
+          {tabs.map(([k, label, Icon]) => (
             <button key={k} type="button" onClick={() => setTab(k)} data-testid={`crm-tab-${k}`} className={`px-4 py-2 text-sm inline-flex items-center gap-1.5 ${tab === k ? "bg-urbanex-navy text-urbanex-ivory" : "text-urbanex-navy/70"}`}>
               <Icon className="w-3.5 h-3.5"/>{label}{k === "today" && countToday > 0 && <span className="ml-1 text-[10px] bg-red-500 text-white rounded-full px-1.5">{countToday}</span>}
             </button>
@@ -205,6 +214,7 @@ export default function LeadsPage() {
         <select value={sort} onChange={(e) => setSort(e.target.value)} className={sel} aria-label="Sort">
           <option value="newest">Newest first</option><option value="score">Best score first</option><option value="follow_up">By follow-up date</option><option value="updated">Recently active</option>
         </select>
+        <button type="button" onClick={() => setSpam(v => !v)} aria-pressed={spam} data-testid="crm-spam" className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm ${spam ? "bg-red-600 text-white border-red-600" : "bg-white"}`}><ShieldAlert className="w-3.5 h-3.5"/>Spam{summary?.spam_hidden ? ` (${summary.spam_hidden})` : ""}</button>
         <span className="text-xs text-urbanex-navy/50 font-mono ml-auto">{shown.length} leads</span>
       </div>
 
@@ -221,6 +231,7 @@ export default function LeadsPage() {
 
       {tab === "today" && (
         <div className="mt-4 space-y-8" data-testid="crm-today">
+          <PlanPanel templates={templates} me={me} onOpen={openLead} tick={summary?.total || 0}/>
           {today.map(([title, list, cls]) => list.length > 0 && (
             <section key={title}>
               <h2 className={`text-sm font-semibold mb-2 ${cls}`}>{title} <span className="text-urbanex-navy/40 font-normal">({list.length})</span></h2>
@@ -271,7 +282,10 @@ export default function LeadsPage() {
 
       {tab === "matches" && <MatchesPanel initial={sp.get("match")} onOpenLead={(id) => setOpenId(id)}/>}
       {tab === "calls" && <CallsPanel onOpenLead={(id) => setOpenId(id)}/>}
-      {tab === "insights" && <Insights summary={summary}/>}
+      {tab === "insights" && <><Insights summary={summary}/><InsightsExtra/></>}
+      {tab === "inbox" && <InboxPanel onOpenLead={(id) => setOpenId(id)}/>}
+      {tab === "outbox" && <OutboxPanel onOpenLead={(id) => setOpenId(id)}/>}
+      {tab === "auto" && <AutomationPanel/>}
 
       <LeadSheet lead={open} onClose={closeLead} onChange={onChange} templates={templates} me={me}/>
       <AiAddSheet open={dlg === "ai"} onClose={() => setDlg(null)} onDone={() => { load(); loadSummary(); }}/>

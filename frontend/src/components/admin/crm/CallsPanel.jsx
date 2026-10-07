@@ -54,7 +54,14 @@ export default function CallsPanel({ onOpenLead }) {
               <span className="ml-auto text-xs text-gray-400">{c.source} · {ago(c.created_at)}</span>
             </div>
             {c.summary && <p className="mt-1 text-sm text-gray-700">{c.summary}</p>}
-            {c.action_items?.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">{c.action_items.map((a, i) => <li key={i}>{a}</li>)}</ul>}
+            {c.action_items?.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">{c.action_items.map((a, i) => <li key={i}>{typeof a === "string" ? a : `${a.text}${a.due_date ? ` (by ${a.due_date})` : ""}`}</li>)}</ul>}
+            {c.coaching && (c.coaching.score != null || c.coaching.tips?.length > 0) && (
+              <div className="mt-2 rounded-lg bg-urbanex-cream/60 px-3 py-2 text-xs text-gray-700" data-testid="call-coaching">
+                {c.coaching.score != null && <span className={`mr-2 rounded-full px-2 py-0.5 text-[10px] ${c.coaching.score >= 70 ? "bg-emerald-100 text-emerald-700" : c.coaching.score >= 40 ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-700"}`}>Call score {c.coaching.score}</span>}
+                {c.coaching.tone && <span className="text-gray-500">{c.coaching.tone} tone · </span>}
+                <span className="text-gray-500">{c.coaching.asked_for_visit ? "asked for a visit" : "did not ask for a visit"}{c.coaching.agreed_next_step ? " · next step agreed" : ""}</span>
+                {c.coaching.tips?.length > 0 && <ul className="mt-1 list-disc pl-5">{c.coaching.tips.map((t, i) => <li key={i}>{t}</li>)}</ul>}
+              </div>)}
             {c.status === "done" && <button onClick={() => show(c)} className="mt-2 inline-flex items-center gap-1 text-xs text-urbanex-navy/60 hover:text-urbanex-gold"><ChevronDown className={`w-3 h-3 transition-transform ${open === c.id ? "rotate-180" : ""}`}/> Transcript</button>}
             {open === c.id && <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-gray-50 p-3 text-xs text-gray-700 max-h-64 overflow-y-auto font-sans">{text}</pre>}
           </div>

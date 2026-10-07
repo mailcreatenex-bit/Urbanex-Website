@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Users, BarChart3, FileText, LogOut, ArrowLeft, Building2, CalendarCheck, Star, BookOpen, Mail, Youtube, HandHeart, Bell, Wallet, FileSearch } from "lucide-react";
+import { Users, BarChart3, FileText, LogOut, ArrowLeft, Building2, CalendarCheck, Star, BookOpen, Mail, Youtube, HandHeart, Bell, Wallet, FileSearch, UsersRound } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import { ADMIN } from "@/constants/testIds";
 
@@ -11,9 +11,9 @@ export default function AdminLayout() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-urbanex-navy/50">Verifying…</div>;
   if (!user) return <Navigate to="/" replace/>;
-  if (!user.is_admin) return <Navigate to="/" replace/>;
+  if (!user.is_admin && !user.is_staff) return <Navigate to="/" replace/>;
 
-  const items = [
+  const allItems = [
     { to: "/admin/leads", label: "CRM", icon: Users, tid: ADMIN.navLeads },
     { to: "/admin/interests", label: "Interested", icon: HandHeart, tid: "admin-nav-interests" },
     { to: "/admin/videos", label: "Videos", icon: Youtube, tid: "admin-nav-videos" },
@@ -27,7 +27,9 @@ export default function AdminLayout() {
     { to: "/admin/digest", label: "Digest", icon: Mail, tid: "admin-nav-digest" },
     { to: "/admin/reports", label: "Reports", icon: BarChart3, tid: ADMIN.navReports },
     { to: "/admin/invoices", label: "Invoices", icon: FileText, tid: ADMIN.navInvoices },
+    { to: "/admin/team", label: "Team", icon: UsersRound, tid: "admin-nav-team" },
   ];
+  const items = user.is_admin ? allItems : allItems.slice(0, 1);   // team members only get the CRM
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] grid grid-cols-1 lg:grid-cols-[260px_1fr]">
