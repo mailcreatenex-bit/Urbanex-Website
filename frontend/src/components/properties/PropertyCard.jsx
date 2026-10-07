@@ -4,6 +4,7 @@ import { MapPin, BedDouble, Bath, Ruler, ArrowRight, Heart, Home, Play, ShieldCh
 import { useFavorites, MAX_COMPARE } from "@/context/FavoritesContext";
 import { useI18n } from "@/context/I18nContext";
 import PriceBlock from "@/components/common/PriceBlock";
+import CardActions from "@/components/common/CardActions";
 import Tilt from "@/components/fx/Tilt";
 import { PROP } from "@/constants/testIds";
 import { assetUrl } from "@/lib/config";
@@ -99,6 +100,8 @@ export default function PropertyCard({ property, idx = 0 }) {
             {t("card.details")} <ArrowRight className="w-4 h-4 transition-transform group-hover/link:translate-x-1"/>
           </Link>
         </div>
+
+        <CardActions kind="properties" id={property.slug || property.id} title={property.title} zone={property.zone}/>
 
         <label className={`mt-4 pt-4 border-t border-urbanex-navy/10 flex items-center gap-2 text-xs cursor-pointer select-none ${!comparing && compare.length >= MAX_COMPARE ? "opacity-40 cursor-not-allowed" : "text-urbanex-navy/70"}`}>
           <input

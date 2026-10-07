@@ -26,5 +26,6 @@ export const api = axios.create({
 api.interceptors.request.use((cfg) => {
   const id = deviceId();
   if (id) cfg.headers["X-Device-Id"] = id;
+  try { const ref = localStorage.getItem("urbanex_ref"); if (ref) cfg.headers["X-Referral"] = ref; } catch { /* storage blocked */ }
   return cfg;
 });

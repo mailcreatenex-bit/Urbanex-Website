@@ -9,7 +9,7 @@ const inp = "border rounded-lg px-3 py-2 text-sm bg-white";
 const KIND = {
   follow_up_nudge: ["Follow-up nudge", "After a few quiet days"], revival: ["Revival", "After a month of silence"], missed_call: ["Missed-call reply", "Right after a missed call"],
   wish: ["Festival wishes", "To past customers on festival days"], price_drop: ["Price-drop alert", "To people who liked the listing"], reawaken: ["Cold-lead wake-up", "A new listing that fits an old lead"],
-  digest: ["Daily “new for you”", "Only to leads who agreed"], visit_reminder: ["Visit reminder", "A day and two hours before"], doc_reminder: ["Document reminder", "When papers are late"], reply: ["Replies", ""],
+  digest: ["Daily “new for you”", "Only to leads who agreed"], visit_reminder: ["Visit reminder", "A day and two hours before"], doc_reminder: ["Document reminder", "When papers are late"], instant_reply: ["Instant reply to a new lead", "Details and a visit link, right away"], price_reply: ["Price on request", "To anyone who asked for a price"], vastu_report: ["Vastu report", "To people who checked a plan"], reply: ["Replies", ""],
 };
 
 // ---- everything that came in, from every channel
@@ -91,7 +91,8 @@ export function OutboxPanel({ onOpenLead }) {
 export function AutomationPanel() {
   const [cfg, setCfg] = useState(null);
   const [running, setRunning] = useState(false);
-  useEffect(() => { api.get("/admin/crm/automation").then(r => setCfg(r.data)).catch(() => {}); }, []);
+  const [scope, setScope] = useState("night");
+  useEffect(() => { api.get("/admin/crm/automation").then(r => setCfg(r.data)).catch(() => {}); api.get("/admin/crm/instant").then(r => setScope(r.data.scope)).catch(() => {}); }, []);
   if (!cfg) return null;
   const save = async (patch, msg = "Saved") => { try { const { data } = await api.put("/admin/crm/automation", patch); setCfg(data); if (msg) toast.success(msg); } catch (e) { toast.error(err(e, "Could not save")); } };
   const setMode = (k, v) => save({ modes: { [k]: v } }, "");
@@ -108,6 +109,11 @@ export function AutomationPanel() {
           <div key={k} className="flex items-center gap-3 text-sm"><div className="flex-1"><div>{label}</div><div className="text-[11px] text-gray-400">{sub}</div></div>
             <select value={cfg.modes[k]} onChange={(e) => setMode(k, e.target.value)} className={`${inp} py-1 text-xs`}><option value="ask">Ask me first</option><option value="auto">Send by itself</option><option value="off">Off</option></select></div>
         ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span>Instant reply to new leads:</span>
+        <select value={scope} onChange={(e) => { setScope(e.target.value); api.put("/admin/crm/instant", { scope: e.target.value }).then(() => toast.success("Saved")).catch(() => toast.error("Could not save")); }} className={`${inp} py-1`} data-testid="instant-scope"><option value="night">only at night, when you cannot answer</option><option value="always">at any hour</option></select>
+        <span className="text-xs text-gray-500">Replies to someone who just wrote to you may go out at night; everything else waits until morning.</span>
       </div>
       <div>
         <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={cfg.sequence.enabled} onChange={(e) => save({ sequence: { enabled: e.target.checked, steps } }, "")}/> Follow-up sequence for leads who go quiet</label>

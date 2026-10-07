@@ -4,6 +4,7 @@ import LandShell from "@/pages/utilities/LandShell";
 import KathaSetting, { useKatha } from "@/pages/utilities/land/LandUnitsBar";
 import { fmt, fromSqft, kathaChatak, toSqft, unitTable } from "@/lib/land";
 import { useSeo } from "@/lib/seo";
+import ShareResults from "@/components/common/ShareResults";
 
 export default function ConverterPage() {
   useSeo({ title: "Land unit converter: katha, bigha, decimal, acre", description: "Convert between katha, chatak, bigha, decimal, acre, square feet and square metres." });
@@ -38,6 +39,7 @@ export default function ConverterPage() {
           ))}
         </div>
       </div>
+      <ShareResults title="Land size converted" lines={[`${value || 0} ${units.find(u => u.id === unit)?.label || unit} = ${kc.katha} katha ${fmt(kc.chatak)} chatak`, ...units.filter(u => u.id !== unit).slice(0, 4).map(u => `${fmt(fromSqft(sqft, u.id, katha), 3)} ${u.label}`)]}/>
     </LandShell>
   );
 }

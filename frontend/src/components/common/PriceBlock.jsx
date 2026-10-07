@@ -2,6 +2,7 @@ import { HandHeart } from "lucide-react";
 import { useViewer } from "@/context/ViewerContext";
 import { useI18n } from "@/context/I18nContext";
 import { inr } from "@/lib/config";
+import QuickPrice from "@/components/common/QuickPrice";
 
 export function priceDropped(info) {
   return !!info?.price_drop_at && Date.now() - new Date(info.price_drop_at).getTime() < 14 * 86400000;
@@ -37,6 +38,7 @@ export default function PriceBlock({ type, item, size = "card", testId }) {
         <HandHeart className="w-4 h-4"/> {t("interest.btn")}
       </button>
       <div className="mt-1 text-[11px] text-urbanex-navy/45">{t("interest.hint")}</div>
+      {size === "detail" && <QuickPrice type={type} item={item} className="mt-2"/>}
     </div>
   );
 }

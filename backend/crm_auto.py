@@ -24,6 +24,7 @@ IST = ZoneInfo("Asia/Kolkata")
 
 KINDS = ["follow_up_nudge", "revival", "missed_call", "wish", "price_drop", "reawaken", "digest", "visit_reminder", "doc_reminder", "reply"]
 DEFAULT_MODES = {k: "ask" for k in KINDS} | {"digest": "off"}
+INSTANT_KINDS: set = set()      # filled in by lead_magnets: kinds that may go out at night
 COOLDOWN_DAYS = {"follow_up_nudge": 2, "revival": 20, "missed_call": 1, "price_drop": 3, "reawaken": 14, "digest": 1, "visit_reminder": 0, "doc_reminder": 1, "reply": 0, "wish": 0}
 
 T = {
@@ -214,10 +215,12 @@ def in_quiet_hours(cfg: dict, now: Optional[datetime] = None) -> bool:
 async def deliver_pass() -> int:
     """Send the messages set to "automatic", when the WhatsApp API is connected and it is not the middle of the night."""
     cfg = await auto_settings()
-    if not cfg["api_connected"] or in_quiet_hours(cfg):
+    if not cfg["api_connected"]:
         return 0
+    quiet = in_quiet_hours(cfg)      # at night only replies to someone who has just written to us go out
+    q = {"status": "queued", "mode": "auto", **({"kind": {"$in": sorted(INSTANT_KINDS)}} if quiet else {})}
     sent = 0
-    async for m in S.db.outbox.find({"status": "queued", "mode": "auto"}, {"_id": 0}).limit(30):
+    async for m in S.db.outbox.find(q, {"_id": 0}).limit(30):
         lead = await S.db.leads.find_one({"id": m["lead_id"]}, {"_id": 0})
         if not lead or is_blocked(lead):
             await S.db.outbox.update_one({"id": m["id"]}, {"$set": {"status": "skipped", "note": "no longer needed"}})

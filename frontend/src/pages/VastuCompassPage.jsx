@@ -16,7 +16,7 @@ const SHORT = { entrance: "Door", kitchen: "Kitchen", master_bedroom: "Master", 
 const TONE = { ideal: "bg-emerald-400/90 text-emerald-950", good: "bg-emerald-300/90 text-emerald-950", ok: "bg-amber-300/90 text-amber-950", poor: "bg-orange-400/90 text-orange-950", wrong: "bg-red-500 text-white" };
 const EXAMPLE = { facing: "S", rooms: { entrance: ["SW"], kitchen: ["NE"], pooja: ["SW"], master_bedroom: ["SE"], toilet: ["NE", "NW"], staircase: ["C"], bedroom: ["W"], living: ["N"] } };
 
-function Ring({ score }) {
+export function Ring({ score }) {
   const pct = score == null ? 0 : score;
   const col = score == null ? "#64748b" : score >= 85 ? "#34d399" : score >= 70 ? "#C5A059" : score >= 50 ? "#fbbf24" : "#f87171";
   const C = 2 * Math.PI * 54;
@@ -42,7 +42,7 @@ export default function VastuCompassPage() {
   const [notes, setNotes] = useState([]);
   const [lead, setLead] = useState({ name: "", phone: "" });
   const [ts, setTs] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(null);
   const fileRef = useRef(null);
   const seq = useRef(0);
 
@@ -91,10 +91,12 @@ export default function VastuCompassPage() {
     e.preventDefault();
     const ph = checkPhone(lead.phone);
     if (lead.name.trim().length < 2 || !ph.ok) { toast.error(ph.ok ? "Please tell us your name" : ph.error); return; }
+    if (!has) { toast.error("Place at least one room first"); return; }
     try {
-      await api.post("/vastu/lead", { name: lead.name.trim(), phone: ph.value, score: res?.score ?? null, facing, problems: (res?.must_fix || []).map(i => `${i.label} in ${i.direction_name}`), turnstile_token: ts || undefined });
-      setSent(true); toast.success("Thank you. Ayan will call you about a Vastu-first design.");
-    } catch (er) { toast.error(apiError(er, "Could not send. Please WhatsApp Ayan.")); } finally { setTs(""); }
+      const { data } = await api.post("/vastu/report", { name: lead.name.trim(), phone: ph.value, facing, rooms, turnstile_token: ts || undefined });
+      setSent(data); try { sessionStorage.setItem("urbanex_lead_given", "1"); } catch { /* ignore */ }
+      toast.success("Your Vastu report is ready.");
+    } catch (er) { toast.error(apiError(er, "Could not make the report. Please WhatsApp Ayan.")); } finally { setTs(""); }
   };
 
   const wa = waLink(`Hello Ayan, I checked my plan on the Vastu Compass${res ? ` (score ${res.score}/100)` : ""}. I would like a Vastu-first design.`);
@@ -209,15 +211,22 @@ export default function VastuCompassPage() {
 
             <div className="rounded-[2rem] bg-urbanex-gold text-urbanex-navy p-6 md:p-8" data-testid="vastu-cta">
               <div className="flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase"><Compass className="w-4 h-4"/> Vastu first, always</div>
-              <h2 className="mt-2 font-display text-3xl leading-tight">Want it drawn right from the start?</h2>
-              <p className="mt-2 text-sm text-urbanex-navy/75">We design and build Vastu-first. If a plan breaks Vastu we say so, and we will not build against it.</p>
-              {sent ? <p className="mt-4 rounded-xl bg-white/50 p-3 text-sm">Received. Ayan will call you soon.</p> : (
+              <h2 className="mt-2 font-display text-3xl leading-tight">Get this as a report on WhatsApp</h2>
+              <p className="mt-2 text-sm text-urbanex-navy/75">A page you can keep and forward to family, with every fix listed. Free. We design and build Vastu-first, and we say so when a plan breaks it.</p>
+              {sent ? (
+                <div className="mt-4 rounded-xl bg-white/60 p-4 text-sm space-y-3" data-testid="vastu-sent">
+                  <p>Your report is ready and Ayan will also send it to your WhatsApp.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link to={`/vastu/report/${sent.token}`} className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-2.5">Open my report <ArrowRight className="w-4 h-4"/></Link>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`My Vastu report from Urbanex Realty: ${sent.score}/100. ${sent.link}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-urbanex-navy/40 px-5 py-2.5"><MessageCircle className="w-4 h-4"/> Share with family</a>
+                  </div>
+                </div>) : (
                 <form onSubmit={send} className="mt-4 space-y-2.5">
                   <input value={lead.name} onChange={(e) => setLead(l => ({ ...l, name: e.target.value }))} placeholder="Your name" autoComplete="name" className="w-full rounded-xl bg-white/70 border border-urbanex-navy/10 px-4 py-3 text-sm placeholder:text-urbanex-navy/45" data-testid="vastu-name"/>
                   <input value={lead.phone} onChange={(e) => setLead(l => ({ ...l, phone: e.target.value }))} placeholder="Phone / WhatsApp" inputMode="tel" autoComplete="tel" className="w-full rounded-xl bg-white/70 border border-urbanex-navy/10 px-4 py-3 text-sm placeholder:text-urbanex-navy/45" data-testid="vastu-phone"/>
                   <Turnstile value={ts} onChange={setTs}/>
                   <div className="flex flex-wrap gap-2">
-                    <button disabled={TURNSTILE_ENABLED && !ts} className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-3 text-sm disabled:opacity-50" data-testid="vastu-send">Call me <ArrowRight className="w-4 h-4"/></button>
+                    <button disabled={TURNSTILE_ENABLED && !ts} className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-3 text-sm disabled:opacity-50" data-testid="vastu-send">Send my report <ArrowRight className="w-4 h-4"/></button>
                     <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-urbanex-navy/40 px-5 py-3 text-sm"><MessageCircle className="w-4 h-4"/> WhatsApp</a>
                   </div>
                 </form>

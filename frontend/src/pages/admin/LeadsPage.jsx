@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap, Target, PhoneCall, X, Inbox, Send, Bot, ShieldAlert } from "lucide-react";
+import { AlarmClock, Download, FileUp, Flame, LayoutGrid, ListChecks, MessageSquareText, Plus, Search, Sparkles, Table2, TrendingUp, BarChart3, Zap, Target, PhoneCall, X, Inbox, Send, Bot, ShieldAlert, Gift } from "lucide-react";
 import { api, API_BASE } from "@/lib/api";
 import { ADMIN } from "@/constants/testIds";
 import Board, { LeadCard } from "@/components/admin/crm/Board";
@@ -13,13 +13,14 @@ import MatchesPanel from "@/components/admin/crm/MatchesPanel";
 import CallsPanel from "@/components/admin/crm/CallsPanel";
 import PlanPanel from "@/components/admin/crm/PlanPanel";
 import InsightsExtra from "@/components/admin/crm/InsightsExtra";
+import GrowthPanel from "@/components/admin/crm/GrowthPanel";
 import { AutomationPanel, InboxPanel, OutboxPanel } from "@/components/admin/crm/AutomationPanels";
 import { useAuth } from "@/context/AuthContext";
 import { AddLeadSheet, ImportSheet, TemplatesSheet } from "@/components/admin/crm/CrmDialogs";
 import { SOURCES, STAGES, TEMP, dueLabel, followUpIn, inrShort, stageOf } from "@/lib/crm";
 
 const sel = "bg-white border border-urbanex-navy/15 rounded-full px-4 py-2 text-sm";
-const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["matches", "Matches", Target], ["calls", "Calls", PhoneCall], ["insights", "Insights", BarChart3], ["inbox", "Inbox", Inbox], ["outbox", "Messages", Send], ["auto", "Automation", Bot]];
+const TABS = [["today", "Today", ListChecks], ["board", "Board", LayoutGrid], ["table", "Table", Table2], ["matches", "Matches", Target], ["calls", "Calls", PhoneCall], ["insights", "Insights", BarChart3], ["inbox", "Inbox", Inbox], ["outbox", "Messages", Send], ["auto", "Automation", Bot], ["growth", "Growth", Gift]];
 const STAFF_TABS = ["today", "board", "table", "matches"];
 
 function Stat({ label, value, sub, icon: Icon, tone = "", onClick, testId }) {
@@ -286,6 +287,7 @@ export default function LeadsPage() {
       {tab === "inbox" && <InboxPanel onOpenLead={(id) => setOpenId(id)}/>}
       {tab === "outbox" && <OutboxPanel onOpenLead={(id) => setOpenId(id)}/>}
       {tab === "auto" && <AutomationPanel/>}
+      {tab === "growth" && <GrowthPanel onOpenLead={(id) => setOpenId(id)}/>}
 
       <LeadSheet lead={open} onClose={closeLead} onChange={onChange} templates={templates} me={me}/>
       <AiAddSheet open={dlg === "ai"} onClose={() => setDlg(null)} onDone={() => { load(); loadSummary(); }}/>

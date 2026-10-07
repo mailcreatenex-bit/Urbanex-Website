@@ -44,6 +44,7 @@ export default function Footer() {
             <li><Link to="/properties" className="hover:text-urbanex-gold">Properties</Link></li>
             <li><Link to="/construction" className="hover:text-urbanex-gold">Contract Construction</Link></li>
             <li><Link to="/vastu" className="hover:text-urbanex-gold">Vastu Compass</Link></li>
+            <li><Link to="/free-check" className="hover:text-urbanex-gold">Free document check</Link></li>
             <li><Link to="/map" className="hover:text-urbanex-gold">Map of Burdwan</Link></li>
             <li><Link to="/zone-quiz" className="hover:text-urbanex-gold">Find your zone</Link></li>
             <li><Link to="/nri" className="hover:text-urbanex-gold">NRI desk</Link></li>

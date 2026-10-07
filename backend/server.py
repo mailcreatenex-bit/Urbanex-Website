@@ -947,12 +947,16 @@ async def auth_logout(request: Request, response: Response):
     return {"ok": True}
 
 # =============== Leads ===============
+async def tag_referral(request: Request, lead_id: str):
+    """Replaced by lead_magnets: notes which past client's referral link a visitor came through."""
+
 @api.post("/leads")
 async def create_lead(payload: LeadCreate, request: Request):
     rate_limit(request, "leads", 10)
     await require_human(request, payload.turnstile_token)
     flags = await track_submission(request, "lead", payload.phone)
     r = await ingest_lead(name=payload.name, phone=payload.phone, email=payload.email, source=payload.source_page, interest=payload.property_interest, message=payload.message, flags=flags)
+    await tag_referral(request, r["id"])
     return {"ok": True, "id": r["id"]}
 
 LEAD_STAGES = ["new", "contacted", "site_visit", "negotiation", "closed", "lost"]
@@ -6084,7 +6088,7 @@ async def ingest_lead(*, name: Optional[str], phone: Optional[str] = None, email
     return {"id": doc["id"], "created": True, "spam": sp["spam"], "spam_reasons": sp["reasons"]}
 
 import importlib  # noqa: E402
-for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff", "site_future"):
+for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff", "site_future", "lead_magnets"):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), _mod + ".py")):
         importlib.import_module(_mod)          # these add their own routes and background jobs; they must load before the router is included
 
@@ -6114,7 +6118,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_origins=CORS_ORIGINS,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Device-Id"],
+    allow_headers=["Content-Type", "Authorization", "X-Device-Id", "X-Referral"],
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

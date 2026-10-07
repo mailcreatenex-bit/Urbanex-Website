@@ -74,7 +74,7 @@ export const en = {
   "social.eyebrow": "Follow along", "social.title": "Latest from Urbanex on social media", "social.follow": "Follow", "social.noVideos": "New videos will appear here.",
   "social.threadsBody": "Short updates and thoughts from Ayan. Threads does not offer an embeddable feed, so open the profile to read the latest posts.", "social.threadsBtn": "Open on Threads",
 
-  "pwa.installTitle": "Install the Urbanex app", "pwa.installBody": "One tap from your home screen: tours, listings and alerts.", "pwa.install": "Install", "pwa.howTo": "How to install", "pwa.later": "Not now", "pwa.b1": "Alerts when a new home matches you", "pwa.b2": "Land record tools that only work in the app", "pwa.b3": "Opens in one tap, loads faster",
+  "pwa.installTitle": "Install the Urbanex app", "pwa.installBody": "One tap from your home screen: tours, listings and alerts.", "pwa.install": "Install", "card.whatsapp": "WhatsApp", "card.share": "Share", "pwa.howTo": "How to install", "pwa.later": "Not now", "pwa.b1": "Alerts when a new home matches you", "pwa.b2": "Land record tools that only work in the app", "pwa.b3": "Opens in one tap, loads faster",
   "pwa.installApp": "Install app", "pwa.alertsTurnOn": "Get alerts", "pwa.alertsTurnOff": "Alerts on (turn off)",
   "pwa.iosIntro": "Add Urbanex to your iPhone home screen in two taps:", "pwa.iosStep1": "Tap the Share button in Safari's toolbar", "pwa.iosStep2": "Choose “Add to Home Screen”, then Add",
   "pwa.manualIntro": "Your browser did not offer a one-tap install.", "pwa.manualSteps": "Open your browser menu and choose “Install Urbanex” or “Add to Home screen”. In Chrome and Edge there is also an install icon in the address bar.",
@@ -145,7 +145,7 @@ export const bn = {
   "social.eyebrow": "সঙ্গে থাকুন", "social.title": "সোশ্যাল মিডিয়ায় আরবানেক্সের সর্বশেষ", "social.follow": "ফলো", "social.noVideos": "নতুন ভিডিও এখানে আসবে।",
   "social.threadsBody": "আয়নের ছোট আপডেট ও ভাবনা। থ্রেডস এমবেড ফিড দেয় না, তাই সর্বশেষ পোস্ট পড়তে প্রোফাইল খুলুন।", "social.threadsBtn": "থ্রেডসে খুলুন",
 
-  "pwa.howTo": "কীভাবে ইনস্টল করবেন", "pwa.later": "এখন নয়", "pwa.b1": "আপনার পছন্দের নতুন বাড়ি এলে খবর", "pwa.b2": "শুধু অ্যাপে চলে এমন জমির রেকর্ডের টুল", "pwa.b3": "এক ট্যাপে খোলে, দ্রুত লোড হয়", "pwa.installTitle": "আরবানেক্স অ্যাপ ইনস্টল করুন", "pwa.installBody": "হোম স্ক্রিন থেকে এক ট্যাপে: ট্যুর, তালিকা ও অ্যালার্ট।", "pwa.install": "ইনস্টল",
+  "card.whatsapp": "হোয়াটসঅ্যাপ", "card.share": "শেয়ার", "pwa.howTo": "কীভাবে ইনস্টল করবেন", "pwa.later": "এখন নয়", "pwa.b1": "আপনার পছন্দের নতুন বাড়ি এলে খবর", "pwa.b2": "শুধু অ্যাপে চলে এমন জমির রেকর্ডের টুল", "pwa.b3": "এক ট্যাপে খোলে, দ্রুত লোড হয়", "pwa.installTitle": "আরবানেক্স অ্যাপ ইনস্টল করুন", "pwa.installBody": "হোম স্ক্রিন থেকে এক ট্যাপে: ট্যুর, তালিকা ও অ্যালার্ট।", "pwa.install": "ইনস্টল",
   "pwa.installApp": "অ্যাপ ইনস্টল", "pwa.alertsTurnOn": "অ্যালার্ট চালু করুন", "pwa.alertsTurnOff": "অ্যালার্ট চালু (বন্ধ করুন)",
   "pwa.iosIntro": "দুই ট্যাপে আইফোনের হোম স্ক্রিনে আরবানেক্স যোগ করুন:", "pwa.iosStep1": "সাফারির টুলবারে শেয়ার বোতাম চাপুন", "pwa.iosStep2": "“Add to Home Screen” বেছে নিন, তারপর Add",
   "pwa.manualIntro": "আপনার ব্রাউজার এক ট্যাপে ইনস্টলের সুযোগ দেয়নি।", "pwa.manualSteps": "ব্রাউজারের মেনু খুলে “Install Urbanex” বা “Add to Home screen” বেছে নিন। ক্রোম ও এজে ঠিকানা বারেও একটি ইনস্টল আইকন থাকে।",

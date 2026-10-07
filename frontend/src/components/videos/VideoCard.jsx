@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { BedDouble, Heart, MapPin, Ruler } from "lucide-react";
 import { useFavorites } from "@/context/FavoritesContext";
 import PriceBlock from "@/components/common/PriceBlock";
+import CardActions from "@/components/common/CardActions";
 import YouTubeClip from "@/components/videos/YouTubeClip";
 import Tilt from "@/components/fx/Tilt";
 import { useI18n } from "@/context/I18nContext";
@@ -35,6 +36,7 @@ export default function VideoCard({ video }) {
         </div>
         <Link to={`/properties/video/${video.video_id}`} className="mt-2 block font-display text-xl text-urbanex-navy leading-snug line-clamp-2 hover:text-urbanex-gold transition-colors">{video.title}</Link>
         <div className="mt-4"><PriceBlock type="video" item={video}/></div>
+        <CardActions kind="videos" id={video.video_id} title={video.title} zone={video.zone}/>
       </div>
     </article>
     </Tilt>

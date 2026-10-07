@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck, Sparkles, HandshakeIcon, Hammer } from "lucide-react";
@@ -12,6 +13,7 @@ import HomeCtas from "@/components/home/HomeCtas";
 import Concierge from "@/components/home/Concierge";
 import Triptych from "@/components/home/Triptych";
 import Spot from "@/components/fx/Spot";
+import { api } from "@/lib/api";
 
 const PILLARS = [
   { icon: Sparkles, title: "Hand-picked", body: "We only list what we would buy ourselves." },
@@ -42,6 +44,26 @@ function Strip() {
   );
 }
 
+// A real counter of this week's free checks, so the offer is honest.
+function FreeBand() {
+  const [st, setSt] = useState(null);
+  useEffect(() => { api.get("/free-checks/status").then(r => setSt(r.data)).catch(() => {}); }, []);
+  return (
+    <section className="bg-urbanex-ivory" data-testid="free-band">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-14">
+        <Link to="/free-check" className="group flex flex-wrap items-center gap-6 rounded-3xl border border-urbanex-gold/50 bg-gradient-to-r from-urbanex-gold/15 to-transparent p-6 md:p-8 hover:border-urbanex-gold transition-colors">
+          <div className="grid place-items-center h-14 w-14 rounded-2xl bg-urbanex-navy text-urbanex-gold"><ShieldCheck className="w-7 h-7"/></div>
+          <div className="flex-1 min-w-[240px]">
+            <div className="text-[11px] tracking-[0.24em] uppercase text-urbanex-gold">Free this week{st ? ` · ${st.left} of ${st.limit} left` : ""}</div>
+            <div className="font-display text-3xl text-urbanex-navy leading-tight">Free plot document check. Know before you pay.</div>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-6 py-3 text-sm group-hover:bg-urbanex-gold group-hover:text-urbanex-navy transition-colors">Book mine <ArrowRight className="w-4 h-4"/></span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   return (
     <div>
@@ -50,6 +72,7 @@ export default function HomePage() {
       <GreetingBand/>
       <Triptych/>
       <Strip/>
+      <FreeBand/>
       <LatestVideos/>
       <PromoBand/>
 

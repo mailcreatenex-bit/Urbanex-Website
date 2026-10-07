@@ -3,6 +3,7 @@ import UtilityShell from "@/pages/utilities/UtilityShell";
 import { emi } from "@/components/properties/Calculators";
 import { useSeo } from "@/lib/seo";
 import { inrFull } from "@/lib/config";
+import ShareResults from "@/components/common/ShareResults";
 
 const num = (v) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : 0);
 const Field = ({ label, value, onChange, suffix, step = "any", testId }) => (
@@ -117,6 +118,9 @@ export default function EmiPage() {
           </div>
         </div>
       )}
+      {mode === "emi"
+        ? <ShareResults title="Home loan EMI" lines={[`Loan ${inrFull(num(amount))} at ${rate}% for ${years} years`, `Monthly EMI ${inrFull(Math.round(calc.m))}`, `Total interest ${inrFull(Math.round(calc.interest))}`]}/>
+        : <ShareResults title="How much home loan can I get?" lines={[`Income ${inrFull(num(income))} a month`, `Loan of about ${inrFull(Math.round(afford.loan / 10000) * 10000)}`, `EMI up to ${inrFull(Math.round(afford.maxEmi))} a month`]}/>}
       <p className="mt-6 text-xs text-urbanex-navy/45">An estimate only. Your bank's offer, fees and rate changes will differ.</p>
     </UtilityShell>
   );

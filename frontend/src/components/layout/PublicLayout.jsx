@@ -8,13 +8,14 @@ import InterestModal from "@/components/common/InterestModal";
 import ScrollProgress from "@/components/fx/ScrollProgress";
 import CursorGlow from "@/components/fx/CursorGlow";
 import { InstallPill, InstallHelp } from "@/components/pwa/InstallUi";
+import ExitOffer from "@/components/common/ExitOffer";
 
 // The chat widget is not needed for first paint; it loads in the background.
 const AssistantWidget = lazy(() => import("@/components/assistant/AssistantWidget"));
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
-  const bleed = pathname === "/" || pathname.startsWith("/construction") || pathname === "/vastu" || pathname === "/map";   // pages that start with their own full-width scene sit under the dock
+  const bleed = pathname === "/" || pathname.startsWith("/construction") || pathname.startsWith("/vastu") || pathname === "/map" || pathname === "/free-check";   // pages that start with their own full-width scene sit under the dock
   return (
     <div className="min-h-screen flex flex-col bg-urbanex-ivory film-grain">
       <ScrollProgress/>
@@ -26,6 +27,7 @@ export default function PublicLayout() {
       <Suspense fallback={null}><AssistantWidget/></Suspense>
       <LoginModal/>
       <InterestModal/>
+      <ExitOffer/>
       <InstallPill/>
       <InstallHelp/>
     </div>

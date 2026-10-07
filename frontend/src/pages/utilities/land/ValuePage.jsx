@@ -4,6 +4,7 @@ import KathaSetting, { useKatha } from "@/pages/utilities/land/LandUnitsBar";
 import { fmt, fromSqft, toSqft, unitTable } from "@/lib/land";
 import { inrFull } from "@/lib/config";
 import { useSeo } from "@/lib/seo";
+import ShareResults from "@/components/common/ShareResults";
 
 const Field = ({ label, children }) => <label className="block text-xs text-urbanex-navy/60">{label}<div className="mt-1">{children}</div></label>;
 const inp = "w-full border border-urbanex-navy/15 rounded-lg px-3 py-2.5 text-sm bg-white";
@@ -57,6 +58,7 @@ export default function ValuePage() {
           <div className="mt-3 text-xs text-urbanex-ivory/60">Plot size {fmt(r.sqft)} sq ft = {fmt(fromSqft(r.sqft, "katha", katha))} katha</div>
         </div>
       </div>
+      <ShareResults title="Plot cost estimate" lines={[`Plot ${fmt(r.sqft)} sq ft`, `Land price ${inrFull(Math.round(r.value))}`, `With stamp duty and registration: about ${inrFull(Math.round(r.total))}`]}/>
     </LandShell>
   );
 }

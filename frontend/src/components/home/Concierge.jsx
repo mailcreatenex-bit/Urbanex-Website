@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Mic, Play, Search, Square, Volume2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/config";
+import LeadMini from "@/components/common/LeadMini";
 
 const SR = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const LANGS = [["en-IN", "English"], ["bn-IN", "বাংলা"], ["hi-IN", "हिन्दी"]];
@@ -19,6 +20,7 @@ export default function Concierge({ overlap = false }) {
   const [out, setOut] = useState(null);
   const [error, setError] = useState("");
   const [talk, setTalk] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
   const rec = useRef(null);
   const sendRef = useRef(null);
 
@@ -111,6 +113,13 @@ export default function Concierge({ overlap = false }) {
                     </motion.div>
                   ))}
                 </div>
+                {!out.exact && (
+                  <div className="mt-8 rounded-2xl border border-urbanex-gold/40 bg-urbanex-gold/10 p-5 text-center" data-testid="concierge-alert-offer">
+                    <div className="font-display text-2xl">Not what you wanted?</div>
+                    <p className="text-sm text-urbanex-ivory/70 mt-1">We will message you the moment a match comes up.</p>
+                    <button type="button" onClick={() => setAlertOpen(true)} data-testid="concierge-alert" className="mt-3 rounded-full bg-urbanex-gold text-urbanex-navy px-6 py-2.5 text-sm font-medium">Tell me when one comes up</button>
+                  </div>
+                )}
                 <div className="mt-8 flex flex-wrap justify-center gap-3">
                   <Link to={out.url} className="inline-flex items-center gap-2 rounded-full bg-urbanex-gold text-urbanex-navy px-6 py-3 text-sm font-medium">See all matches <ArrowRight className="w-4 h-4"/></Link>
                   {out.vastu && <Link to="/vastu" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold/60 text-urbanex-gold px-6 py-3 text-sm">Check a plan on the Vastu Compass</Link>}
@@ -120,6 +129,9 @@ export default function Concierge({ overlap = false }) {
           </AnimatePresence>
         </div>
       </motion.div>
+      <LeadMini open={alertOpen} onClose={() => setAlertOpen(false)} testId="concierge-alert-dialog" title="We will tell you first" intro={chips.join(" · ") || "Any new home that fits what you asked for"}
+        cta="Message me when one comes up" doneTitle="You are on the list" doneText="Ayan will WhatsApp you as soon as something matching comes up."
+        onSubmit={async (p) => (await api.post("/enquiry/alert", { ...p, source: "concierge", zone: u.zone, property_type: u.property_type, bedrooms: u.bedrooms, listing_type: u.listing_type, budget_inr: u.max_budget_inr, note: text.slice(0, 200) })).data}/>
     </section>
   );
 }
