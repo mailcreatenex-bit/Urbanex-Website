@@ -9,8 +9,11 @@ const dismissedRecently = () => {
   try { return Date.now() - Number(localStorage.getItem(DISMISS_KEY) || 0) < 14 * 86400000; } catch { return false; }
 };
 
-// Floating "Install app" pill. It appears a few seconds after the page opens, once the visitor has scrolled a bit,
-// and stays away for 2 weeks if dismissed. Only shown where installing is actually possible.
+// "Install the app" pop-up. It slides in after the visitor has used the site for a little while (about 12 seconds),
+// once per visit, and stays away for a week if dismissed. Where the browser has a one-tap prompt the button uses it;
+// elsewhere (iPhone, Firefox, desktop Safari) the button shows the manual steps. Never shown inside the installed app.
+const SHOWN_KEY = "urbanex_install_shown";
+const SHOW_AFTER_MS = 12000;
 export function InstallPill() {
   const { installed, canPrompt, install } = usePwa();
   const { t } = useI18n();
@@ -18,34 +21,42 @@ export function InstallPill() {
   const [gone, setGone] = useState(dismissedRecently);
 
   useEffect(() => {
-    if (installed || gone) return undefined;
-    let timeOk = false, scrolled = false;
-    const check = () => { if (timeOk && scrolled) setReady(true); };
-    const timer = setTimeout(() => { timeOk = true; check(); }, 6000);
-    const onScroll = () => { if (window.scrollY > 450) { scrolled = true; check(); } };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => { clearTimeout(timer); window.removeEventListener("scroll", onScroll); };
+    let seen = false;
+    try { seen = sessionStorage.getItem(SHOWN_KEY) === "1"; } catch { /* ignore */ }
+    if (installed || gone || seen) return undefined;
+    const timer = setTimeout(() => {
+      if (document.hidden) return;                       // not while the tab is in the background
+      try { sessionStorage.setItem(SHOWN_KEY, "1"); } catch { /* ignore */ }
+      setReady(true);
+    }, SHOW_AFTER_MS);
+    return () => clearTimeout(timer);
   }, [installed, gone]);
 
-  // browsers without a prompt (except iPhone, where the manual steps help) just get the footer link
-  if (installed || gone || !ready || !(canPrompt || isIOS())) return null;
+  if (installed || gone || !ready) return null;
   const dismiss = () => { try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ } setGone(true); };
+  const go = async () => { const r = await install(); if (r === "accepted") setGone(true); };
 
   return (
     <div role="dialog" aria-label={t("pwa.installTitle")} data-testid="install-pill"
-      className="fixed z-40 bottom-24 left-1/2 -translate-x-1/2 w-[min(92vw,420px)] animate-in slide-in-from-bottom-6 fade-in duration-500">
-      <div className="flex items-center gap-3 bg-urbanex-navy text-urbanex-ivory rounded-2xl pl-3 pr-2 py-3 shadow-2xl border border-white/10">
-        <img src="/icons/icon-192.png" alt="" width="44" height="44" className="w-11 h-11 rounded-xl bg-white p-1 shrink-0"/>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium leading-tight">{t("pwa.installTitle")}</div>
-          <div className="text-xs text-urbanex-ivory/60 leading-snug">{t("pwa.installBody")}</div>
+      className="fixed z-[55] inset-x-3 bottom-3 sm:inset-x-auto sm:right-6 sm:bottom-24 sm:w-[400px] animate-in slide-in-from-bottom-8 fade-in duration-700">
+      <div className="glass-dark rounded-3xl p-5 text-urbanex-ivory bg-[#0a1226]/95 relative overflow-hidden">
+        <button type="button" onClick={dismiss} aria-label={t("common.close")} className="absolute top-3 right-3 p-1.5 rounded-full text-urbanex-ivory/60 hover:text-urbanex-ivory hover:bg-white/10"><X className="w-4 h-4"/></button>
+        <div className="flex items-center gap-4">
+          <span className="grid place-items-center h-16 w-16 shrink-0 rounded-2xl bg-white shadow-[0_0_0_3px_rgba(197,160,89,.45)] overflow-hidden"><img src="/icons/icon-192.png" alt="" width="64" height="64" className="h-full w-full object-contain p-1"/></span>
+          <div className="min-w-0 pr-6">
+            <div className="font-display text-2xl leading-tight">{t("pwa.installTitle")}</div>
+            <div className="text-xs text-urbanex-ivory/60 mt-0.5">{t("pwa.installBody")}</div>
+          </div>
         </div>
-        <button type="button" onClick={install} data-testid="install-pill-btn"
-          className="shrink-0 inline-flex items-center gap-1.5 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full px-4 py-2 text-sm font-medium">
-          <Download className="w-4 h-4"/> {t("pwa.install")}
-        </button>
-        <button type="button" onClick={dismiss} aria-label={t("common.close")} className="p-2 text-urbanex-ivory/50 hover:text-urbanex-ivory shrink-0"><X className="w-4 h-4"/></button>
+        <ul className="mt-4 space-y-1.5 text-sm text-urbanex-ivory/80">
+          {["pwa.b1", "pwa.b2", "pwa.b3"].map(k => <li key={k} className="flex gap-2"><span className="text-urbanex-gold">✦</span>{t(k)}</li>)}
+        </ul>
+        <div className="mt-5 flex items-center gap-2">
+          <button type="button" onClick={go} data-testid="install-pill-btn" className="btn-shine flex-1 inline-flex items-center justify-center gap-2 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full px-5 py-3 text-sm font-medium">
+            <Download className="w-4 h-4"/> {canPrompt ? t("pwa.install") : t("pwa.howTo")}
+          </button>
+          <button type="button" onClick={dismiss} data-testid="install-pill-later" className="rounded-full border border-white/20 px-5 py-3 text-sm text-urbanex-ivory/80 hover:border-urbanex-gold">{t("pwa.later")}</button>
+        </div>
       </div>
     </div>
   );
