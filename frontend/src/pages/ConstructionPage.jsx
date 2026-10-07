@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ArrowRight, HardHat } from "lucide-react";
 import BuildScroll from "@/components/construction/BuildScroll";
+import { MaterialTrail, Questions, SiteEyes, Stages, VastuFirst } from "@/components/construction/ConstructionExtras";
 
 export default function ConstructionPage() {
   const ref = useRef(null);
@@ -74,6 +75,11 @@ export default function ConstructionPage() {
           <p className="mt-5 max-w-2xl text-urbanex-ivory/80 text-lg leading-relaxed">
             Turnkey home construction in Burdwan, from design and approvals to move-in day, with a 12-month written warranty. Scroll down and watch a house go up, stage by stage.
           </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <a href="#vastu" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold/60 bg-urbanex-navy/60 backdrop-blur px-4 py-2 text-sm text-urbanex-ivory hover:bg-urbanex-gold hover:text-urbanex-navy transition-colors">Vastu first, always</a>
+            <a href="#cctv" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold/60 bg-urbanex-navy/60 backdrop-blur px-4 py-2 text-sm text-urbanex-ivory hover:bg-urbanex-gold hover:text-urbanex-navy transition-colors"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"/> CCTV on your site, 24/7</a>
+            <a href="#materials" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold/60 bg-urbanex-navy/60 backdrop-blur px-4 py-2 text-sm text-urbanex-ivory hover:bg-urbanex-gold hover:text-urbanex-navy transition-colors">See every material</a>
+          </div>
           <div className="mt-8 flex flex-wrap gap-6 text-urbanex-ivory/90 text-sm font-mono">
             {[["Since", "2022"], ["Written milestones", "5"], ["Free estimate in", "7 days"], ["Warranty", "12 months"]].map(([k, v]) => (
               <div key={k} className="border-l-2 border-urbanex-gold pl-3"><div className="text-[10px] tracking-[0.2em] uppercase text-urbanex-gold">{k}</div><div className="text-xl">{v}</div></div>
@@ -86,6 +92,11 @@ export default function ConstructionPage() {
       {/* The house builds itself as you scroll */}
       <BuildScroll/>
       <div className="h-3 hazard" aria-hidden="true"/>
+
+      <VastuFirst/>
+      <SiteEyes/>
+      <MaterialTrail/>
+      <Stages/>
 
       {/* Site rules */}
       <section className="max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-4 gap-6">
@@ -121,8 +132,10 @@ export default function ConstructionPage() {
         </div>
       </section>
 
+      <Questions/>
+
       {/* CTA form */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-16">
+      <section id="estimate" className="max-w-7xl mx-auto px-6 md:px-12 py-16">
         <div className="relative overflow-hidden rounded-3xl bg-urbanex-navy p-10 md:p-16">
           <div className="grid md:grid-cols-2 gap-10 items-center relative z-10">
             <div>
