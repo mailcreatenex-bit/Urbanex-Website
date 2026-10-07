@@ -22,7 +22,7 @@ export default function Footer() {
   return (
     <footer className="sec-dark mt-0 text-urbanex-ivory">
       <div className="aurora" style={{ opacity: 0.3 }}/>
-      <div className="select-none overflow-hidden pt-16 -mb-6 md:-mb-10" aria-hidden="true"><div className="font-display text-[22vw] leading-[0.8] text-center outline-text tracking-tighter">URBANEX</div></div>
+      <div className="select-none overflow-hidden pt-16 -mb-6 md:-mb-10" aria-hidden="true"><div className="font-display text-[19vw] leading-[0.8] text-center outline-text tracking-tighter whitespace-nowrap">AYAN DEY</div></div>
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <div className="flex items-center gap-4">
