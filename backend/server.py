@@ -322,11 +322,37 @@ async def require_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
+# What a team member (not you) may do: only the CRM screens that deal with their own leads.
+STAFF_RULES = [
+    ("GET", re.compile(r"^/api/admin/leads$")), ("POST", re.compile(r"^/api/admin/leads$")),
+    ("PATCH", re.compile(r"^/api/admin/leads/(?P<lid>[^/]+)$")),
+    ("POST", re.compile(r"^/api/admin/leads/(?P<lid>[^/]+)/(notes|activity|tasks|visit-link|ai/note|ai/note/apply)$")),
+    ("PATCH", re.compile(r"^/api/admin/leads/(?P<lid>[^/]+)/tasks/[^/]+$")),
+    ("GET", re.compile(r"^/api/admin/leads/(?P<lid>[^/]+)/(brief|matches)$")),
+    ("GET", re.compile(r"^/api/admin/crm/(plan|summary|templates)$")),
+]
+
+async def staff_member(user: dict) -> Optional[dict]:
+    if not user or not user.get("email"):
+        return None
+    return await db.staff.find_one({"email": user["email"].lower(), "active": True}, {"_id": 0})
+
 async def require_admin(request: Request) -> dict:
     user = await require_user(request)
-    if not user.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return user
+    if user.get("is_admin"):
+        return user
+    if await staff_member(user):
+        for method, rx in STAFF_RULES:
+            m = rx.match(request.url.path)
+            if m and request.method == method:
+                lid = m.groupdict().get("lid")
+                if lid:
+                    lead = await db.leads.find_one({"id": lid}, {"_id": 0, "owner_email": 1})
+                    if not lead or (lead.get("owner_email") or "").lower() != user["email"].lower():
+                        raise HTTPException(status_code=403, detail="This lead belongs to someone else")
+                request.state.scope_owner = user["email"].lower()
+                return {**user, "staff": True}
+    raise HTTPException(status_code=403, detail="Admin access required")
 
 # =============== Models ===============
 class Property(BaseModel):
@@ -905,7 +931,8 @@ async def auth_me(request: Request):
     user = await get_current_user(request)
     if not user:
         raise HTTPException(401, "Not authenticated")
-    return {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "picture": user.get("picture"), "is_admin": user.get("is_admin", False)}
+    return {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "picture": user.get("picture"), "is_admin": user.get("is_admin", False),
+            "is_staff": bool(not user.get("is_admin") and await staff_member(user))}
 
 @api.post("/auth/logout")
 async def auth_logout(request: Request, response: Response):
@@ -1008,6 +1035,9 @@ async def admin_leads(request: Request, status: Optional[str] = None, source: Op
                       skip: int = Query(0, ge=0), limit: int = Query(1000, ge=1, le=1000)):
     await require_admin(request)
     query: dict = {}
+    scope = getattr(request.state, "scope_owner", None)
+    if scope:
+        query["owner_email"] = scope                  # a team member only sees the leads given to them
     if tag != "spam":
         query["spam"] = {"$ne": True}                 # spam stays out of every list until you look for it
     if status:
@@ -1331,6 +1361,23 @@ async def my_notifications_read(payload: ReadPayload, request: Request):
     return {"ok": True}
 
 # =============== Image uploads ===============
+def image_fingerprint(data: bytes) -> Optional[int]:
+    """A 64-bit "average hash": the same photo, resized or re-saved, gives (nearly) the same number."""
+    try:
+        from PIL import Image
+        import io as _io
+        im = Image.open(_io.BytesIO(data)).convert("L").resize((8, 8))
+        px = list(im.getdata())
+        avg = sum(px) / 64
+        return sum(1 << i for i, v in enumerate(px) if v >= avg)
+    except Exception:
+        return None
+
+async def remember_image(url: str, data: bytes, who: str):
+    h = await asyncio.to_thread(image_fingerprint, data)
+    if h is not None:
+        await db.image_hashes.insert_one({"url": url, "hash": str(h), "who": who, "at": now_utc().isoformat()})
+
 def sniff_image(b: bytes) -> Optional[str]:
     if b[:3] == b"\xff\xd8\xff":
         return "jpg"
@@ -1351,6 +1398,7 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
         raise HTTPException(415, "Only JPEG, PNG or WebP images are allowed")
     name = f"{uuid.uuid4().hex}.{ext}"
     await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    await remember_image(f"/api/uploads/{name}", data, "admin")
     return {"url": f"/api/uploads/{name}"}
 
 # =============== Property CMS (admin) ===============
@@ -3932,7 +3980,11 @@ async def admin_create_lead(payload: LeadManual, request: Request):
     lead["next_follow_up"] = normalise_follow_up(payload.next_follow_up)
     if payload.status == "contacted":
         lead["first_contacted_at"] = now
+    if getattr(request.state, "scope_owner", None):
+        lead["owner_email"] = request.state.scope_owner
     await db.leads.insert_one(dict(lead))
+    for h in LEAD_HOOKS:
+        spawn(h(lead["id"], True))
     return lead_view(lead)
 
 class ActivityIn(BaseModel):
@@ -4177,7 +4229,8 @@ async def crm_summary(request: Request):
     start, end = ist_day_bounds(now)
     ist = ZoneInfo("Asia/Kolkata")
     month_start = now.astimezone(ist).replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
-    leads = [l for l in await db.leads.find({}, {"_id": 0, "notes": 0}).to_list(20000) if not l.get("spam")]
+    scope = getattr(request.state, "scope_owner", None)
+    leads = [l for l in await db.leads.find({"owner_email": scope} if scope else {}, {"_id": 0, "notes": 0}).to_list(20000) if not l.get("spam")]
     vc = await visit_counts()
     stages = {s: 0 for s in LEAD_STAGES}
     new_today = overdue = due_today = hot = untouched = 0
@@ -4377,6 +4430,7 @@ async def owner_upload_image(request: Request, file: UploadFile = File(...)):
         raise HTTPException(415, "Only JPEG, PNG or WebP images are allowed")
     name = f"{uuid.uuid4().hex}.{ext}"
     await asyncio.to_thread((UPLOAD_DIR / name).write_bytes, data)
+    await remember_image(f"/api/uploads/{name}", data, user["user_id"])
     return {"url": f"/api/uploads/{name}"}
 
 async def listing_settings_accepting() -> bool:
@@ -4444,6 +4498,7 @@ async def owner_create_listing(payload: OwnerListingIn, request: Request):
                 listing_state="trial", trial_ends_at=(now + timedelta(days=st["trial_days"])).isoformat(), paid_until=None, payment=None,
                 terms_accepted_at=now.isoformat())
     await db.properties.insert_one(dict(prop))
+    spawn(run_quality_check(prop["id"]))
     await notify_admin("owner_listing", f"New owner listing: {prop['title']}", f"{user.get('name')} · {payload.phone} · {prop['zone']}", link="/admin/listings")
     await notify(user["user_id"], "listing", "Your listing is live", f"{prop['title']} is live for {st['trial_days']} days. Pay by UPI to keep it online.", link="/my-listings")
     return owner_view(prop)
@@ -4486,6 +4541,7 @@ async def owner_update_listing(pid: str, patch: OwnerListingUpdate, request: Req
         if not img or (str(img).startswith("https://i.ytimg.com/") and "video_id" in data):
             data["image"] = yt_thumb(vid)
     await db.properties.update_one({"id": pid}, {"$set": data})
+    spawn(run_quality_check(pid))
     return owner_view(await db.properties.find_one({"id": pid}, {"_id": 0}))
 
 @api.delete("/owner/listings/{pid}")
@@ -5834,6 +5890,7 @@ async def owner_listing_leads(pid: str, request: Request):
 # =============== CRM core for automation: one way in for every lead, spam filter, auto-merge, language ===============
 EXT_LOOPS: list = []        # background jobs added by the crm_* modules; started with the app
 LEAD_HOOKS: list = []       # async functions (lead_id, created: bool) run after a lead is saved (matching, assignment ...)
+QUALITY_HOOKS: list = []    # async functions (property_id) that check an owner listing; set by crm_insights
 PRICE_HOOKS: list = []      # async functions (kind, item, old_price, new_price) run when a listing's price goes down
 GONE_HOOKS: list = []       # async functions (kind, item_id) run when a listing is sold, hidden or deleted
 CALL_HOOKS: list = []       # async functions (call_log: dict, lead_id) run after a call recording was understood
@@ -6030,6 +6087,10 @@ import importlib  # noqa: E402
 for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff"):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), _mod + ".py")):
         importlib.import_module(_mod)          # these add their own routes and background jobs; they must load before the router is included
+
+async def run_quality_check(pid: str):
+    for h in QUALITY_HOOKS:
+        await h(pid)
 
 # ---------- Include ----------
 app.include_router(api)

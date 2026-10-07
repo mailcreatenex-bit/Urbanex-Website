@@ -179,7 +179,8 @@ async def build_plan(limit: int = 15, scope: Optional[dict] = None) -> dict:
 @S.api.get("/admin/crm/plan")
 async def crm_plan(request: Request, limit: int = Query(15, ge=1, le=50)):
     await S.require_admin(request)
-    return await build_plan(limit)
+    scope = getattr(request.state, "scope_owner", None)                 # a team member only gets their own leads
+    return await build_plan(limit, {"owner_email": scope} if scope else None)
 
 
 # ---------------------------------------------------------------- where people want to buy

@@ -11,3 +11,4 @@ emergentintegrations==0.2.0
 tzdata>=2024.2
 pywebpush>=2.0.0
 cryptography>=42
+Pillow>=10
