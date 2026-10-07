@@ -44,9 +44,13 @@ def state(c, pid):
     return c.portal.call(lambda: server.db.properties.find_one({"id": pid}, {"_id": 0}))
 
 
-def test_cannot_list_until_the_upi_details_are_set_then_free_days_start(c):
+def test_listings_open_by_default_and_can_be_switched_off_and_free_days_start(c):
+    first = c.get("/api/listing-plans").json()
+    assert first["accepting"] is True and first["can_pay"] is False          # free days work before any UPI details exist
+    assert c.put("/api/admin/listing-settings", json={"accepting": False}, headers=ADMIN).status_code == 200
     assert c.get("/api/listing-plans").json()["accepting"] is False
     assert c.post("/api/owner/listings", json=BODY, headers=OWNER).status_code == 503
+    assert c.put("/api/admin/listing-settings", json={"accepting": True}, headers=ADMIN).status_code == 200
     assert c.post("/api/owner/listings", json=BODY).status_code == 401
     bad = c.put("/api/admin/listing-settings", json={"upi_id": "not a upi"}, headers=ADMIN)
     assert bad.status_code == 422
@@ -54,7 +58,7 @@ def test_cannot_list_until_the_upi_details_are_set_then_free_days_start(c):
         {"id": "30", "days": 30, "amount": 499, "label": "30 days"}, {"id": "90", "days": 90, "amount": 999, "label": "90 days"}]}, headers=ADMIN)
     assert ok.status_code == 200
     pub = c.get("/api/listing-plans").json()
-    assert pub["accepting"] is True and "upi_id" not in pub and pub["trial_days"] == 3
+    assert pub["accepting"] is True and pub["can_pay"] is True and "upi_id" not in pub and pub["trial_days"] == 3
     assert c.get("/api/owner/payment-info").status_code == 401
     assert c.get("/api/owner/payment-info", headers=OWNER).json()["upi_id"] == "ayan@oksbi"
 

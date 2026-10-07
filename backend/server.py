@@ -4411,7 +4411,7 @@ class ListingSettingsIn(BaseModel):
 async def listing_plans():
     """Public: what listing costs. The UPI details are only shown to a signed-in owner (see /owner/payment-info)."""
     st = await listing_settings()
-    return {"accepting": bool(st["accepting"] and st["upi_id"]), "trial_days": st["trial_days"], "plans": st["plans"], "max_per_owner": st["max_per_owner"]}
+    return {"accepting": bool(st["accepting"]), "can_pay": bool(st["upi_id"]), "trial_days": st["trial_days"], "plans": st["plans"], "max_per_owner": st["max_per_owner"]}
 
 @api.get("/owner/payment-info")
 async def owner_payment_info(request: Request):
@@ -4439,7 +4439,7 @@ async def owner_upload_image(request: Request, file: UploadFile = File(...)):
 
 async def listing_settings_accepting() -> bool:
     st = await listing_settings()
-    return bool(st["accepting"] and st["upi_id"])
+    return bool(st["accepting"])      # listings are free for the first days, so they can be taken before UPI details are added
 
 @api.get("/admin/listing-settings")
 async def admin_listing_settings(request: Request):
@@ -4482,7 +4482,7 @@ async def owner_create_listing(payload: OwnerListingIn, request: Request):
     user = await require_user(request)
     rate_limit(request, "owner_listing", 10, 3600)
     st = await listing_settings()
-    if not st["accepting"] or not st["upi_id"]:
+    if not st["accepting"]:
         raise HTTPException(503, "New listings are not being accepted right now. Please try again soon.")
     if not payload.accepted_terms:
         raise HTTPException(422, "Please accept the listing terms")

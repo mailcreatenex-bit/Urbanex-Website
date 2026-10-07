@@ -37,6 +37,7 @@ def c():
             await server.db.user_sessions.update_one({"session_token": "au-admin"}, {"$set": {"user_id": "aua", "expires_at": exp}}, upsert=True)
         client.portal.call(seed)
         before = client.portal.call(_iso.snapshot, server)
+        client.put("/api/admin/crm/automation", json={"modes": {"instant_reply": "off"}}, headers=ADMIN)    # the night-time instant reply would add messages to these counts
         yield client
         client.portal.call(_iso.restore, server, before)
 

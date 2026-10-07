@@ -118,7 +118,8 @@ async def put_automation(payload: AutoSettingsIn, request: Request):
     data = payload.model_dump(exclude_none=True)
     seq = data.pop("sequence", None)
     if "modes" in data:
-        data["modes"] = {k: v for k, v in data["modes"].items() if k in KINDS and v in ("ask", "auto", "off")}
+        modes = {k: v for k, v in data.pop("modes").items() if k in KINDS and v in ("ask", "auto", "off")}
+        data.update({f"modes.{k}": v for k, v in modes.items()})        # change only the kinds that were sent; the rest keep their setting
     if data:
         await S.db.settings.update_one({"_id": "crm_auto"}, {"$set": data}, upsert=True)
     if seq is not None:
