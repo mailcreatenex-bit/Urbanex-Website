@@ -20,7 +20,9 @@ function Cre8nexMark() {
 
 export default function Footer() {
   return (
-    <footer className="mt-24 bg-urbanex-navy text-urbanex-ivory">
+    <footer className="sec-dark mt-0 text-urbanex-ivory">
+      <div className="aurora" style={{ opacity: 0.3 }}/>
+      <div className="select-none overflow-hidden pt-16 -mb-6 md:-mb-10" aria-hidden="true"><div className="font-display text-[22vw] leading-[0.8] text-center outline-text tracking-tighter">URBANEX</div></div>
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <div className="flex items-center gap-4">
@@ -41,6 +43,8 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-urbanex-ivory/80">
             <li><Link to="/properties" className="hover:text-urbanex-gold">Properties</Link></li>
             <li><Link to="/construction" className="hover:text-urbanex-gold">Contract Construction</Link></li>
+            <li><Link to="/vastu" className="hover:text-urbanex-gold">Vastu Compass</Link></li>
+            <li><Link to="/map" className="hover:text-urbanex-gold">Map of Burdwan</Link></li>
             <li><Link to="/zone-quiz" className="hover:text-urbanex-gold">Find your zone</Link></li>
             <li><Link to="/nri" className="hover:text-urbanex-gold">NRI desk</Link></li>
             <li><Link to="/blog" className="hover:text-urbanex-gold">Area guides</Link></li>

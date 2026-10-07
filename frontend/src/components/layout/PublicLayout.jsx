@@ -14,12 +14,13 @@ const AssistantWidget = lazy(() => import("@/components/assistant/AssistantWidge
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
+  const bleed = pathname === "/" || pathname.startsWith("/construction") || pathname === "/vastu" || pathname === "/map";   // pages that start with their own full-width scene sit under the dock
   return (
-    <div className="min-h-screen flex flex-col bg-urbanex-ivory">
+    <div className="min-h-screen flex flex-col bg-urbanex-ivory film-grain">
       <ScrollProgress/>
       <CursorGlow/>
       <Navbar/>
-      <main key={pathname} className="flex-1 page-in"><Suspense fallback={<div className="min-h-[70vh]"/>}><Outlet/></Suspense></main>
+      <main key={pathname} className={`flex-1 page-in ${bleed ? "" : "pt-24 md:pt-28"}`}><Suspense fallback={<div className="min-h-[70vh]"/>}><Outlet/></Suspense></main>
       <Footer/>
       <FloatingWhatsApp/>
       <Suspense fallback={null}><AssistantWidget/></Suspense>

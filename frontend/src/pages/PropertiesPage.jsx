@@ -29,7 +29,7 @@ export default function PropertiesPage() {
   });
 
   const [sp] = useSearchParams();
-  const [f, setF] = useState(() => ({ ...EMPTY, zone: sp.get("zone") || "" }));
+  const [f, setF] = useState(() => ({ ...EMPTY, zone: sp.get("zone") || "", property_type: sp.get("property_type") || "", min_bedrooms: sp.get("min_bedrooms") || "", listing_type: sp.get("listing_type") || "" }));
   const [bbox, setBbox] = useState(null);
   const [view, setView] = useState("list");
   const [zones, setZones] = useState([]);

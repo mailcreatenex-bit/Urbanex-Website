@@ -1,7 +1,7 @@
 // Bengali UI strings. Missing keys fall back to English. Please have a native speaker review the wording.
 const bn = {
   "nav.home": "হোম", "nav.properties": "সম্পত্তি", "nav.construction": "নির্মাণ", "nav.about": "আমাদের কথা",
-  "nav.contact": "যোগাযোগ", "nav.blog": "গাইড", "nav.shortlist": "পছন্দের তালিকা", "nav.signin": "সাইন ইন",
+  "nav.contact": "যোগাযোগ", "nav.map": "মানচিত্র", "nav.vastu": "বাস্তু", "nav.blog": "গাইড", "nav.shortlist": "পছন্দের তালিকা", "nav.signin": "সাইন ইন",
   "nav.crm": "সিআরএম", "nav.signout": "সাইন আউট",
   "footer.explore": "ঘুরে দেখুন", "footer.reach": "যোগাযোগ করুন",
   "props.eyebrow": "বর্তমান তালিকা", "props.title": "বর্ধমানের বাড়ি। প্রতিটি সম্পত্তি আয়ন নিজে ঘুরে দেখেছেন।",

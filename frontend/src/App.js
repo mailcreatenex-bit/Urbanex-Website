@@ -58,6 +58,8 @@ const LandReportsAdminPage = lazy(() => import("@/pages/admin/LandReportsAdminPa
 const TeamPage = lazy(() => import("@/pages/admin/TeamPage"));
 const BookVisitPage = lazy(() => import("@/pages/BookVisitPage"));
 const WeeklyReportPage = lazy(() => import("@/pages/WeeklyReportPage"));
+const VastuCompassPage = lazy(() => import("@/pages/VastuCompassPage"));
+const MapPage = lazy(() => import("@/pages/MapPage"));
 const ListPropertyPage = lazy(() => import("@/pages/ListPropertyPage"));
 const MyListingsPage = lazy(() => import("@/pages/MyListingsPage"));
 
@@ -104,6 +106,8 @@ function AppRouter() {
         <Route path="/utilities/banglar-bhumi/scan" element={<Navigate to="/utilities/document-scanner" replace/>}/>
         <Route path="/book-visit/:token" element={<BookVisitPage/>}/>
         <Route path="/report/:token" element={<WeeklyReportPage/>}/>
+        <Route path="/vastu" element={<VastuCompassPage/>}/>
+        <Route path="/map" element={<MapPage/>}/>
         <Route path="/list-your-property" element={<ListPropertyPage/>}/>
         <Route path="/my-listings" element={<MyListingsPage/>}/>
         <Route path="/terms" element={<TermsPage/>}/>

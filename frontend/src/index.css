@@ -147,3 +147,58 @@
 .beacon { animation: beacon 1.2s ease-in-out infinite; }
 .hazard-move { animation: tape-slide 2.4s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .crane-hook, .crane-load, .beacon, .hazard-move { animation: none; } }
+
+/* ===== The "future" layer: dark glass, aurora light, blueprint lines, film grain ===== */
+@layer components {
+  .sec-dark { position: relative; isolation: isolate; background: #060d1c; color: #FDFBF7; overflow: hidden; }
+  .sec-dark::before {      /* blueprint grid that fades out toward the edges */
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+    background-image: linear-gradient(rgba(197,160,89,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(197,160,89,.10) 1px, transparent 1px);
+    background-size: 72px 72px; -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 100%); mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 100%);
+  }
+  .aurora { position: absolute; inset: -20%; z-index: -1; pointer-events: none; filter: blur(70px); opacity: .55;
+    background: radial-gradient(40% 40% at 20% 30%, rgba(197,160,89,.45), transparent 70%), radial-gradient(35% 35% at 80% 20%, rgba(70,110,255,.30), transparent 70%), radial-gradient(40% 40% at 60% 85%, rgba(0,200,170,.20), transparent 70%);
+    animation: auroraMove 22s ease-in-out infinite alternate; }
+  @keyframes auroraMove { from { transform: translate3d(-3%, -2%, 0) scale(1); } to { transform: translate3d(4%, 3%, 0) scale(1.12); } }
+
+  .glass-dark { background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border: 1px solid rgba(255,255,255,.13); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); box-shadow: 0 30px 60px -30px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12); }
+  .glass-light { background: rgba(255,255,255,.72); border: 1px solid rgba(10,18,37,.08); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 20px 50px -30px rgba(10,18,37,.35); }
+  .dock { background: rgba(8,14,30,.72); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); box-shadow: 0 18px 50px -20px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1); }
+
+  .chapter { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: #C5A059; display: inline-flex; align-items: center; gap: .9rem; }
+  .chapter::before { content: attr(data-n); padding: .2rem .55rem; border: 1px solid rgba(197,160,89,.55); border-radius: 999px; letter-spacing: .1em; }
+  .outline-text { color: transparent; -webkit-text-stroke: 1px rgba(253,251,247,.28); }
+  .outline-text-dark { color: transparent; -webkit-text-stroke: 1px rgba(10,18,37,.22); }
+
+  .strip { display: flex; width: max-content; animation: stripMove 38s linear infinite; }
+  .strip:hover { animation-play-state: paused; }
+  @keyframes stripMove { to { transform: translateX(-50%); } }
+
+  .spotlight { position: relative; }
+  .spotlight::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(420px circle at var(--sx, 50%) var(--sy, 50%), rgba(197,160,89,.22), transparent 55%); }
+  .spotlight:hover::before { opacity: 1; }
+
+  .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: drawLine 2.4s cubic-bezier(.3,.7,.2,1) forwards; }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+  .ring-spin { animation: ringSpin 60s linear infinite; transform-origin: 50% 50%; }
+  .ring-spin-rev { animation: ringSpin 90s linear infinite reverse; transform-origin: 50% 50%; }
+  @keyframes ringSpin { to { transform: rotate(360deg); } }
+  .pulse-ring { animation: pulseRing 2.4s ease-out infinite; }
+  @keyframes pulseRing { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(2.2); opacity: 0; } }
+  .mask-line { display: block; overflow: hidden; }
+  .mask-line > span { display: block; transform: translateY(105%); animation: maskUp 1s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(var(--i, 0) * 110ms + 150ms); }
+  @keyframes maskUp { to { transform: none; } }
+  .film-grain::after { content: ""; position: fixed; inset: -50%; z-index: 60; pointer-events: none; opacity: .05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); animation: grainShift 1.2s steps(6) infinite; }
+  @keyframes grainShift { 0% { transform: translate(0,0); } 20% { transform: translate(-3%,2%); } 40% { transform: translate(2%,-3%); } 60% { transform: translate(-2%,-1%); } 80% { transform: translate(3%,3%); } 100% { transform: translate(0,0); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora, .strip, .ring-spin, .ring-spin-rev, .pulse-ring, .film-grain::after { animation: none; }
+  .mask-line > span { transform: none; animation: none; }
+  .draw { stroke-dashoffset: 0; animation: none; }
+}
+
+.leaflet-layer.dark-tiles { filter: invert(1) hue-rotate(195deg) brightness(.85) contrast(.95) saturate(.45); }
+.leaflet-container { background: #0b1220; font-family: Outfit, sans-serif; }
+.leaflet-popup-content-wrapper { border-radius: 14px; }

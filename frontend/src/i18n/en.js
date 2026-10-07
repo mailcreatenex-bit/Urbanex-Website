@@ -1,6 +1,6 @@
 const en = {
   "nav.home": "Home", "nav.properties": "Properties", "nav.construction": "Construction", "nav.about": "About",
-  "nav.contact": "Contact", "nav.blog": "Guides", "nav.shortlist": "Shortlist", "nav.signin": "Sign in",
+  "nav.contact": "Contact", "nav.map": "Map", "nav.vastu": "Vastu", "nav.blog": "Guides", "nav.shortlist": "Shortlist", "nav.signin": "Sign in",
   "nav.crm": "CRM", "nav.signout": "Sign out",
   "footer.explore": "Explore", "footer.reach": "Reach us",
   "props.eyebrow": "Live inventory", "props.title": "Homes in Burdwan. Every one, personally walked by Ayan.",
