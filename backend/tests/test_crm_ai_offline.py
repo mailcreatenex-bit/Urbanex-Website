@@ -262,9 +262,9 @@ def test_pricing_a_listing_shortlists_customers(c):
         c.patch(f"/api/admin/leads/{lid}", json=kw, headers=ADMIN)
         return lid
     good = lead("Good Fit", "9830500001", budget_inr=4500000, wants={"property_type": "apartment", "bedrooms": 2, "zones": ["Nawabhat"]})
-    close = lead("Close Budget", "9830500002", budget_inr=3300000, wants={"property_type": "apartment"})
-    poor = lead("Too Poor", "9830500003", budget_inr=1000000, wants={"property_type": "apartment"})
-    wrong = lead("Wants Plot", "9830500004", budget_inr=4500000, wants={"property_type": "plot"})
+    lead("Close Budget", "9830500002", budget_inr=3300000, wants={"property_type": "apartment"})
+    lead("Too Poor", "9830500003", budget_inr=1000000, wants={"property_type": "apartment"})
+    lead("Wants Plot", "9830500004", budget_inr=4500000, wants={"property_type": "plot"})
     done = lead("Already Bought", "9830500005", budget_inr=4500000, wants={"property_type": "apartment"})
     c.patch(f"/api/admin/leads/{done}", json={"status": "closed"}, headers=ADMIN)
     prop = c.post("/api/admin/properties", json={"title": "2BHK in Nawabhat", "zone": "Nawabhat", "property_type": "apartment", "bedrooms": 2, "area_sqft": 900, "price_inr": 4000000,

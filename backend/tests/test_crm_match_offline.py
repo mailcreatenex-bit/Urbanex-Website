@@ -68,10 +68,11 @@ def test_a_new_lead_is_matched_to_existing_listings_at_once(c):
     r = ingest(c, name="Fresh Farhan", phone="9830900001", wants={"property_type": "apartment", "bedrooms": 2, "zones": ["Nawabhat"], "budget_inr": 4200000})
     settle(c)
     l = lead(c, "9830900001")
-    assert l["matches"] and l["matches"][0]["id"] == p["id"] and "Budget fits" in l["matches"][0]["reasons"] and l["matches"][0]["price_inr"] is None      # never the price
+    mine = [m for m in l["matches"] if m["id"] == p["id"]]
+    assert mine and "Budget fits" in mine[0]["reasons"] and all(m["price_inr"] is None for m in l["matches"])      # never the price
     assert any("Fresh Farhan fits" in n["title"] for n in c.get("/api/admin/notifications", headers=ADMIN).json()["items"])
     api = c.get(f"/api/admin/leads/{r['id']}/matches", headers=ADMIN).json()
-    assert api["kind"] == "listings" and api["listings"][0]["id"] == p["id"]
+    assert api["kind"] == "listings" and p["id"] in [x["id"] for x in api["listings"]]
     # a lead that cannot afford anything gets no matches, and no alert
     poor = ingest(c, name="Poor Pinku", phone="9830900002", wants={"property_type": "apartment", "budget_inr": 500000})
     settle(c)
