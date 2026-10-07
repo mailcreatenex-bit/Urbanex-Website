@@ -25,6 +25,8 @@ services:
         sync: false
       - key: ADMIN_EMAILS         # your Google e-mail(s), comma separated
         sync: false
+      - key: KEEPALIVE_URL        # this server's own Render address (shown at the top of the service page), so it keeps itself awake
+        sync: false
       - key: UPLOADS_IN_DB        # the free disk is wiped on restart, so uploads are also kept in the database
         value: "1"
       - key: IP_HASH_SALT

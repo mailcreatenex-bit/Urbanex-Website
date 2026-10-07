@@ -32,6 +32,7 @@ The site and the API share one address (Netlify forwards `/api/*` to Render), so
 | `ADMIN_EMAILS` | your Google e-mail(s), comma separated. These people become admin |
 | `GEMINI_API_KEY` | your Gemini key (the AI features) |
 | `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID` | your YouTube key and channel id (the video tours) |
+| `KEEPALIVE_URL` | the server's own Render address from the next step, e.g. `https://urbanex-api.onrender.com` (this keeps it awake, see step 4) |
 | `WHATSAPP_NUMBER` | your number, digits only with country code, e.g. `919830012345` |
 
 4. Wait for the first deploy (about 5 minutes). Your server address is shown at the top, like `https://urbanex-api.onrender.com`.
@@ -47,15 +48,20 @@ If the address is different from `urbanex-api.onrender.com`, edit the `to = ...`
 4. Go back to Render and set `CORS_ORIGINS`, `PUBLIC_SITE_URL` and `PUBLIC_API_URL` to this address, then save (it redeploys).
 5. Optional: add your own domain under **Domain management** (the domain costs money, the hosting does not).
 
-## 4. Keep the server awake (UptimeRobot)
+## 4. Keep the server awake, free
 
-Without this, the first visitor after 15 quiet minutes waits about a minute while Render wakes up, and the automatic jobs
-(lead follow-ups, video sync, reminders) pause while it sleeps.
+Render puts a free server to sleep after 15 minutes without visitors, and the first visitor then waits about a minute (the automatic
+jobs also pause while it sleeps). Two free fixes, use both:
 
-1. Sign up at uptimerobot.com (free).
-2. **Add new monitor**: type *HTTP(s)*, URL `https://YOUR-SITE.netlify.app/api/`, interval **5 minutes**.
+1. **It pings itself.** Once `KEEPALIVE_URL` is set (step 2), the server asks for its own front page every 10 minutes through Render's public
+   address. Render sees that as traffic and does not put it to sleep. Nothing else is needed.
+2. **UptimeRobot as a backup** (free, no card, and it also e-mails you if the site goes down): sign up at uptimerobot.com, **Add new monitor**, type
+   *HTTP(s)*, URL `https://YOUR-SITE.netlify.app/api/`, interval **5 minutes**. It also wakes the server after a Render restart or a new deploy.
 
-One always-on service uses about 744 of Render's 750 free hours a month, so this fits.
+One always-on service uses about 744 of Render's 750 free hours a month, so this fits, as long as it is your only free service on Render.
+
+If Render asks for a card when you sign up, that is its anti-abuse check (a small charge that is reversed). If you do not want to give one,
+tell me and we will use another host.
 
 ## 5. Check it works
 
@@ -70,7 +76,7 @@ One always-on service uses about 744 of Render's 750 free hours a month, so this
   with roughly 150 to 250 photos; check Atlas under *Metrics* now and then.
 * **Old chat assistant and voice-note transcription** need an extra package that is too big for the free server
   (`backend/requirements-emergent.txt`). They fall back to simple modes. All Gemini features work.
-* **Sleep:** if UptimeRobot is paused, the site is slow for the first visitor.
+* **Sleep:** if both keep-alive methods stop (for example Render restarts the server and nobody visits), the first visitor waits about a minute.
 * **Free tiers can change.** When the business grows, Render's cheapest paid plan (about $7 a month) removes the sleeping and the memory limit.
 
 ## Costs later

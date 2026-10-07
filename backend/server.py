@@ -6111,7 +6111,7 @@ async def ingest_lead(*, name: Optional[str], phone: Optional[str] = None, email
     return {"id": doc["id"], "created": True, "spam": sp["spam"], "spam_reasons": sp["reasons"]}
 
 import importlib  # noqa: E402
-for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff", "site_future", "lead_magnets"):
+for _mod in ("crm_inbox", "crm_auto", "crm_match", "crm_deals", "crm_insights", "crm_staff", "site_future", "lead_magnets", "keepalive"):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), _mod + ".py")):
         importlib.import_module(_mod)          # these add their own routes and background jobs; they must load before the router is included
 
