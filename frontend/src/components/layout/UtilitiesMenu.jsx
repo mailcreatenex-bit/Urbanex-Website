@@ -12,6 +12,7 @@ export default function UtilitiesMenu({ mobile = false, onNavigate, tone = "ligh
   const { pathname } = useLocation();
   const active = pathname.startsWith("/utilities");
   const dark = tone === "dark";
+  const dock = tone === "dock";
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return undefined;
@@ -37,7 +38,7 @@ export default function UtilitiesMenu({ mobile = false, onNavigate, tone = "ligh
   return (
     <div className="relative" ref={box} onMouseEnter={() => window.matchMedia("(hover: hover)").matches && setOpen(true)} onMouseLeave={() => window.matchMedia("(hover: hover)").matches && setOpen(false)}>
       <button type="button" onClick={() => setOpen(o => !o)} aria-haspopup="menu" aria-expanded={open} data-testid="nav-utilities"
-        className={`inline-flex items-center gap-1 text-[13px] tracking-wide transition-colors ${dark ? "px-3 py-2 " : ""}${active ? (dark ? "text-urbanex-gold" : "text-urbanex-navy") : dark ? "text-urbanex-ivory/75 hover:text-urbanex-ivory" : "text-urbanex-navy/60 hover:text-urbanex-navy"}`}>
+        className={`inline-flex items-center gap-1 text-[13px] tracking-wide transition-colors ${dock ? "px-3 py-2 " : ""}${active ? "text-urbanex-navy font-medium" : "text-urbanex-navy/70 hover:text-urbanex-navy"}`}>
         {t("nav.utilities")} <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}/>
       </button>
       {open && (

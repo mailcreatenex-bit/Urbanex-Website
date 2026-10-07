@@ -35,7 +35,7 @@ export default function GreetingBand() {
 
   const g = useMemo(() => buildGreeting({ now, lang, name: user?.name || null, returning, useName }),
     [now, lang, user?.name, returning, useName]);
-  const cta = lang === "bn" ? "নতুন বাড়ি দেখুন" : "See the new homes";
+  const cta = { bn: "নতুন বাড়ি দেখুন", hi: "नए घर देखें" }[lang] || "See the new homes";
 
   return (
     <section data-testid="greeting" className={`px-6 md:px-12 ${g.special ? "bg-gradient-to-r from-urbanex-gold/20 via-urbanex-cream to-urbanex-gold/20" : "bg-urbanex-cream"}`}>

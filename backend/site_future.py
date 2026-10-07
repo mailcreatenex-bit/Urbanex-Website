@@ -183,7 +183,7 @@ Text: {q}"""
 
 REPLIES = {
     "en": {"none": "I could not find an exact match, but here is what is closest. Tell me a little more, or call Ayan.", "some": "I found {n} for you{where}.", "ask": "Tell me what you are looking for, for example a 3BHK near Goda."},
-    "bn": {"none": "ঠিক মিল পাইনি, তবে সবচেয়ে কাছেরগুলো দেখাচ্ছি। আরেকটু বলুন, অথবা আয়ানকে ফোন করুন।", "some": "আপনার জন্য {n}টি পেয়েছি{where}।", "ask": "কী খুঁজছেন বলুন, যেমন গোদার কাছে ৩ বিএইচকে।"},
+    "bn": {"none": "ঠিক মিল পাইনি, তবে সবচেয়ে কাছেরগুলো দেখাচ্ছি। আরেকটু বলুন, অথবা অয়নকে ফোন করুন।", "some": "আপনার জন্য {n}টি পেয়েছি{where}।", "ask": "কী খুঁজছেন বলুন, যেমন গোদার কাছে ৩ বিএইচকে।"},
     "hi": {"none": "ठीक मिलान नहीं मिला, लेकिन सबसे नज़दीकी दिखा रहा हूँ। थोड़ा और बताइए, या अयान को फ़ोन कीजिए।", "some": "आपके लिए {n} मिले{where}।", "ask": "बताइए क्या ढूँढ रहे हैं, जैसे गोदा के पास 3BHK।"},
 }
 

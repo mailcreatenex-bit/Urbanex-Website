@@ -5,6 +5,7 @@ import { ArrowRight, Mic, Play, Search, Square, Volume2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/config";
 import LeadMini from "@/components/common/LeadMini";
+import { useI18n } from "@/context/I18nContext";
 
 const SR = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const LANGS = [["en-IN", "English"], ["bn-IN", "বাংলা"], ["hi-IN", "हिन्दी"]];
@@ -14,7 +15,8 @@ const KEY = { en: "en-IN", bn: "bn-IN", hi: "hi-IN" };
 // "Just say what you want": speak or type it in any of three languages and the site finds the homes and video tours.
 export default function Concierge({ overlap = false }) {
   const [text, setText] = useState("");
-  const [lang, setLang] = useState("en-IN");
+  const { lang: site } = useI18n();
+  const [lang, setLang] = useState(() => ({ bn: "bn-IN", hi: "hi-IN" }[site] || "en-IN"));   // speaks in the language the site is showing
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState(null);

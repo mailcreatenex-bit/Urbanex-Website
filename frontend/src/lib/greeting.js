@@ -49,13 +49,13 @@ export function specialDay(now = new Date(), lang = "en") {
   const { y, m, d } = indiaNow(now);
   const today = dayNumber(y, m, d);
   for (const f of FIXED) {
-    if (f.m === m && f.d === d) return { id: f.id, emoji: f.emoji, title: f[lang][0], text: f[lang][1], upcoming: false };
+    if (f.m === m && f.d === d) return { id: f.id, emoji: f.emoji, title: (f[lang] || f.en)[0], text: (f[lang] || f.en)[1], upcoming: false };
   }
   for (const f of MOVABLE) {
     const from = isoDay(f.from), to = isoDay(f.to);
-    if (today >= from && today <= to) return { id: f.id, emoji: f.emoji, title: f[lang][0], text: f[lang][1], upcoming: false };
+    if (today >= from && today <= to) return { id: f.id, emoji: f.emoji, title: (f[lang] || f.en)[0], text: (f[lang] || f.en)[1], upcoming: false };
     if (f.soon && today >= from - (f.lead || 0) && today < from) {
-      const s = lang === "bn" ? f.soonBn : f.soon;
+      const s = lang === "bn" && f.soonBn ? f.soonBn : f.soon;
       return { id: f.id, emoji: f.emoji, title: s[0], text: s[1], upcoming: true };
     }
   }
@@ -65,6 +65,7 @@ export function specialDay(now = new Date(), lang = "en") {
 const HELLO = {
   en: { morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening", night: "Burning the midnight oil" },
   bn: { morning: "সুপ্রভাত", afternoon: "শুভ অপরাহ্ন", evening: "শুভ সন্ধ্যা", night: "এত রাতেও জেগে" },
+  hi: { morning: "सुप्रभात", afternoon: "नमस्कार", evening: "शुभ संध्या", night: "इतनी रात तक जागे" },
 };
 
 // casual follow-up lines per time of day (first visit / returning); one is chosen per day so it never flickers
@@ -99,13 +100,28 @@ const LINES = {
   },
 };
 
+LINES.hi = {
+  new: {
+    morning: ["चाय के साथ इस हफ़्ते चुने हुए घर देखिए।", "दिन की शुरुआत ऐसे घर से कीजिए जिसे आप अपना कह सकें।"],
+    afternoon: ["थोड़ा आराम? हमारे नए प्रॉपर्टी टूर देख लीजिए।", "मीटिंग के बीच दो मिनट का टूर हमारी तरफ़ से।"],
+    evening: ["शाम को स्क्रॉल कर रहे हैं? आज घर ढूँढने वाला स्क्रॉल कीजिए।", "बर्धमान के कुछ घरों के टूर के साथ आराम कीजिए।"],
+    night: ["नींद नहीं आ रही? हमारे टूर किसी और रील से बेहतर हैं।", "रात में देखिए, घर सुबह भी यहीं मिलेंगे।"],
+  },
+  back: {
+    morning: ["फिर आए हैं? देखें नया क्या आया।", "चाय तैयार? नई लिस्टिंग इंतज़ार कर रही हैं।"],
+    afternoon: ["वापस स्वागत है! देखें आज नया क्या है।", "और देखने आए हैं? कुछ नए घर जुड़े हैं।"],
+    evening: ["फिर आए हैं? चलिए नई प्रॉपर्टी देखते हैं।", "आपको दोबारा देखकर अच्छा लगा। नए टूर आ गए हैं।"],
+    night: ["इतनी रात को फिर? चलिए नई प्रॉपर्टी देखते हैं।", "उस परफ़ेक्ट घर के बारे में अभी सोच रहे हैं? चलिए फिर देखते हैं।"],
+  },
+};
+
 /**
  * @param {{now?: Date, lang?: "en"|"bn", name?: string|null, returning?: boolean, useName?: boolean}} o
  * `useName` is decided by the caller (about half the visits), so a signed-in person is greeted by name only sometimes.
  * @returns {{emoji: string, title: string, text: string, special: boolean}}
  */
 export function buildGreeting({ now = new Date(), lang = "en", name = null, returning = false, useName = true } = {}) {
-  const l = lang === "bn" ? "bn" : "en";
+  const l = lang === "bn" || lang === "hi" ? lang : "en";
   const { hour, y, m, d } = indiaNow(now);
   const tod = timeOfDay(hour);
   const first = name ? String(name).trim().split(/\s+/)[0] : "";

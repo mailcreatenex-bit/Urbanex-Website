@@ -263,7 +263,7 @@ async def checklist_pass() -> int:
             lang = l.get("language") if l.get("language") in ("en", "bn", "hi") else "en"
             first = (l.get("name") or "").split(" ")[0] or "there"
             text = {"en": f"Hi {first}, to move ahead we still need these papers:\n{items}\nPlease send photos on WhatsApp when you can. - Ayan, Urbanex Realty",
-                    "bn": f"নমস্কার {first}, এগোতে আমাদের এই কাগজগুলো এখনও দরকার:\n{items}\nসময় পেলে হোয়াটসঅ্যাপে ছবি পাঠিয়ে দেবেন। - আয়ান, আরবানেক্স রিয়েলটি",
+                    "bn": f"নমস্কার {first}, এগোতে আমাদের এই কাগজগুলো এখনও দরকার:\n{items}\nসময় পেলে হোয়াটসঅ্যাপে ছবি পাঠিয়ে দেবেন। - অয়ন, আরবানেক্স রিয়েলটি",
                     "hi": f"नमस्ते {first}, आगे बढ़ने के लिए हमें ये कागज़ात अभी चाहिए:\n{items}\nसमय मिलने पर WhatsApp पर फोटो भेजिए। - अयान, अर्बनेक्स रियल्टी"}[lang]
             if await crm_auto.queue_message(l["id"], "doc_reminder", text=text, allow_closed=True):
                 asked += 1

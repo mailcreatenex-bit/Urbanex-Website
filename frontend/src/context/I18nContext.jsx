@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import en from "@/i18n/en";
 import bn from "@/i18n/bn";
+import hi from "@/i18n/hi";
 import { en as enMore, bn as bnMore } from "@/i18n/more";
 
-const DICTS = { en: { ...en, ...enMore }, bn: { ...bn, ...bnMore } };
+const DICTS = { en: { ...en, ...enMore }, bn: { ...bn, ...bnMore }, hi };
+export const LANGS = [["en", "EN", "English"], ["bn", "বাং", "বাংলা"], ["hi", "हिं", "हिन्दी"]];
 const Ctx = createContext(null);
 
 const initial = () => {
-  try { const v = localStorage.getItem("urbanex_lang"); if (v === "bn" || v === "en") return v; } catch { /* ignore */ }
+  try { const v = localStorage.getItem("urbanex_lang"); if (v === "bn" || v === "en" || v === "hi") return v; } catch { /* ignore */ }
   return "en";
 };
 
@@ -18,9 +20,9 @@ export function I18nProvider({ children }) {
     setLangState(l);
     try { localStorage.setItem("urbanex_lang", l); } catch { /* ignore */ }
   }, []);
-  // Missing Bengali keys fall back to English, then to the key itself.
+  // Missing Bengali or Hindi keys fall back to English, then to the key itself.
   const t = useCallback((key, vars) => {
-    let s = DICTS[lang][key] ?? DICTS.en[key] ?? key;
+    let s = DICTS[lang]?.[key] ?? DICTS.en[key] ?? key;
     if (vars) Object.entries(vars).forEach(([k, v]) => { s = s.replace(`{${k}}`, v); });
     return s;
   }, [lang]);
