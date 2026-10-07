@@ -6,7 +6,7 @@ import { useI18n } from "@/context/I18nContext";
 import { useSeo } from "@/lib/seo";
 
 export default function BlogPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [posts, setPosts] = useState(null);
   useSeo({ title: "Area guides & buying advice", description: "Burdwan neighbourhood guides, paperwork checklists and smart-buying advice from Urbanex Realty." });
   useEffect(() => { api.get("/posts").then(r => setPosts(r.data)).catch(() => setPosts([])); }, []);
@@ -22,8 +22,8 @@ export default function BlogPage() {
             {p.cover && <img src={assetUrl(p.cover)} alt="" loading="lazy" className="w-full aspect-video object-cover"/>}
             <div className="p-6">
               <div className="flex items-center gap-2 text-[10px] tracking-[0.24em] uppercase text-urbanex-gold">{p.category.replace("-", " ")}{p.generated && <span className="tracking-normal normal-case text-urbanex-navy/50 border border-urbanex-navy/15 rounded-full px-2 py-0.5">{t("blog.ai")}</span>}</div>
-              <h2 className="mt-2 font-display text-2xl text-urbanex-navy group-hover:text-urbanex-gold transition-colors">{p.title}</h2>
-              <p className="mt-2 text-sm text-urbanex-navy/65 line-clamp-3">{p.excerpt}</p>
+              <h2 className="mt-2 font-display text-2xl text-urbanex-navy group-hover:text-urbanex-gold transition-colors">{(lang === "bn" && p.title_bn) || p.title}</h2>
+              <p className="mt-2 text-sm text-urbanex-navy/65 line-clamp-3">{(lang === "bn" && p.excerpt_bn) || p.excerpt}</p>
               <div className="mt-4 text-xs text-urbanex-navy/40">{(p.created_at || "").slice(0, 10)}</div>
             </div>
           </Link>

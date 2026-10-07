@@ -22,7 +22,7 @@ export function Body({ text }) {
 
 export default function BlogPostPage() {
   const { slug } = useParams();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [post, setPost] = useState(null);
   const [missing, setMissing] = useState(false);
   useEffect(() => { api.get(`/posts/${slug}`).then(r => setPost(r.data)).catch(() => setMissing(true)); }, [slug]);
@@ -39,14 +39,15 @@ export default function BlogPostPage() {
   if (missing) return <div className="max-w-3xl mx-auto px-6 py-24 text-urbanex-navy/60">Article not found. <Link to="/blog" className="underline">{t("blog.back")}</Link></div>;
   if (!post) return <div className="max-w-3xl mx-auto px-6 py-24 text-urbanex-navy/50">{t("common.loading")}</div>;
 
+  const showBn = lang === "bn" && !!post.body_bn && !!post.title_bn;
   return (
     <article className="max-w-3xl mx-auto px-6 py-16 md:py-24">
       <Link to="/blog" className="inline-flex items-center gap-2 text-sm text-urbanex-navy/60 hover:text-urbanex-navy mb-8"><ArrowLeft className="w-4 h-4"/> {t("blog.back")}</Link>
       <div className="text-xs tracking-[0.28em] uppercase text-urbanex-gold">{post.category.replace("-", " ")}</div>
-      <h1 className="font-display text-4xl md:text-6xl text-urbanex-navy tracking-tight mt-3 leading-tight text-balance">{post.title}</h1>
+      <h1 className="font-display text-4xl md:text-6xl text-urbanex-navy tracking-tight mt-3 leading-tight text-balance">{showBn ? post.title_bn : post.title}</h1>
       <div className="mt-4 text-sm text-urbanex-navy/50">{post.author} · {(post.created_at || "").slice(0, 10)}</div>
       {post.cover && <img src={assetUrl(post.cover)} alt="" className="mt-8 rounded-2xl w-full aspect-video object-cover"/>}
-      <div className="mt-8"><Body text={post.body}/></div>
+      <div className="mt-8" lang={showBn ? "bn" : "en"}><Body text={showBn ? post.body_bn : post.body}/></div>
       {post.videos?.length > 0 && (
         <section className="mt-14" data-testid="post-videos">
           <h2 className="font-display text-3xl text-urbanex-navy mb-6">{t("blog.videosTitle")}</h2>

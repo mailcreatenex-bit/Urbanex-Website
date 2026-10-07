@@ -52,6 +52,9 @@ const LandConverterPage = lazy(() => import("@/pages/utilities/land/ConverterPag
 const LandAreaPage = lazy(() => import("@/pages/utilities/land/AreaPage"));
 const LandValuePage = lazy(() => import("@/pages/utilities/land/ValuePage"));
 const LandScanPage = lazy(() => import("@/pages/utilities/land/ScanPage"));
+const KhatianReaderPage = lazy(() => import("@/pages/utilities/land/KhatianReaderPage"));
+const LandReportPage = lazy(() => import("@/pages/utilities/land/LandReportPage"));
+const LandReportsAdminPage = lazy(() => import("@/pages/admin/LandReportsAdminPage"));
 const ListPropertyPage = lazy(() => import("@/pages/ListPropertyPage"));
 const MyListingsPage = lazy(() => import("@/pages/MyListingsPage"));
 
@@ -88,6 +91,9 @@ function AppRouter() {
         <Route path="/utilities/plot-area" element={<LandAreaPage/>}/>
         <Route path="/utilities/land-value" element={<LandValuePage/>}/>
         <Route path="/utilities/document-scanner" element={<LandScanPage/>}/>
+        <Route path="/utilities/khatian-reader" element={<KhatianReaderPage/>}/>
+        <Route path="/utilities/land-report" element={<LandReportPage/>}/>
+        <Route path="/utilities/land-report/:id" element={<LandReportPage/>}/>
         <Route path="/utilities/banglar-bhumi" element={<Navigate to="/utilities/land-records" replace/>}/>
         <Route path="/utilities/banglar-bhumi/converter" element={<Navigate to="/utilities/land-converter" replace/>}/>
         <Route path="/utilities/banglar-bhumi/area" element={<Navigate to="/utilities/plot-area" replace/>}/>
@@ -111,6 +117,7 @@ function AppRouter() {
         <Route path="interests" element={<InterestsAdminPage/>}/>
         <Route path="push" element={<PushAdminPage/>}/>
         <Route path="listings" element={<ListingsAdminPage/>}/>
+        <Route path="land-reports" element={<LandReportsAdminPage/>}/>
         <Route path="reports" element={<ReportsPage/>}/>
         <Route path="invoices" element={<InvoicePage/>}/>
       </Route>

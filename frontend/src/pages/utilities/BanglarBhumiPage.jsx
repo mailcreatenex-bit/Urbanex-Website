@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Copy, MessageCircle, Search, ShieldCheck } from "lucide-react";
 import LandShell from "@/pages/utilities/LandShell";
@@ -73,6 +74,16 @@ export default function BanglarBhumiPage() {
             <ul className="mt-3 space-y-2 text-sm text-urbanex-navy/75 list-disc pl-5">{CHECKS.map(s => <li key={s}>{s}</li>)}</ul>
           </div>
         </div>
+      </div>
+      <div className="mt-8 grid sm:grid-cols-2 gap-4" data-testid="land-ctas">
+        <Link to="/utilities/land-report" className="rounded-2xl bg-urbanex-navy text-urbanex-ivory p-5 hover:bg-urbanex-navyLight transition-colors">
+          <div className="font-display text-xl">Let us fetch it for you</div>
+          <p className="mt-1 text-sm text-urbanex-ivory/75">Give the plot or khatian number. We get the official record and explain it. Pay a small fee by UPI.</p>
+        </Link>
+        <Link to="/utilities/khatian-reader" className="rounded-2xl bg-white border border-urbanex-gold/50 p-5 hover:bg-urbanex-cream transition-colors">
+          <div className="font-display text-xl text-urbanex-navy">Already have the record?</div>
+          <p className="mt-1 text-sm text-urbanex-navy/70">Upload a photo or PDF and AI explains it in English and Bengali, with warning signs. Free.</p>
+        </Link>
       </div>
       <p className="mt-8 text-xs text-urbanex-navy/45">Urbanex Realty is not connected to the government. Online records can lag behind the ground reality, so also check the deed and who is in possession, and take legal advice before buying.</p>
       <AppGateModal open={gate} onClose={() => setGate(false)} officialUrl={PORTAL}/>

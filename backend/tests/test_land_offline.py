@@ -39,6 +39,7 @@ def c():
             await server.db.user_sessions.update_one({"session_token": "land-admin"}, {"$set": {"user_id": "lda", "expires_at": exp}}, upsert=True)
         client.portal.call(seed)
         yield client
+        client.portal.call(lambda: server.db.settings.delete_many({"_id": {"$in": ["listing_settings", "land_report"]}}))     # the test files share one database
 
 
 @pytest.fixture

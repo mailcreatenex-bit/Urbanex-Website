@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Languages } from "lucide-react";
 import { api } from "@/lib/api";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -42,6 +42,10 @@ export default function PostsAdminPage() {
       toast.error(Array.isArray(d) ? d.map(x => x.msg).join("; ") : d || "Save failed");
     } finally { setBusy(false); }
   };
+  const translate = async (p) => {
+    try { await api.post(`/admin/posts/${p.id}/translate`); toast.success("Bengali copy written"); load(); }
+    catch (err) { toast.error(err?.response?.data?.detail || "Could not translate"); }
+  };
   const remove = async (p) => {
     if (!window.confirm(`Delete "${p.title}"?`)) return;
     await api.delete(`/admin/posts/${p.id}`).catch(() => toast.error("Delete failed"));
@@ -75,6 +79,7 @@ export default function PostsAdminPage() {
         {items.map(p => (
           <div key={p.id} className="p-4 flex items-center gap-4">
             <div className="flex-1"><div className="font-medium">{p.title}</div><div className="text-xs text-gray-500">{p.category}{p.generated ? " · AI" : ""} · {p.published ? "published" : "draft"} · /blog/{p.slug}</div></div>
+            <button onClick={() => translate(p)} title={p.body_bn ? "Bengali copy exists. Click to rewrite it." : "Write a Bengali copy"} className={`p-2 hover:text-urbanex-gold ${p.body_bn ? "text-emerald-600" : ""}`}><Languages className="w-4 h-4"/></button>
             <button onClick={() => setForm({ ...BLANK, ...p, cover: p.cover || "" })} aria-label="Edit" className="p-2 hover:text-urbanex-gold"><Pencil className="w-4 h-4"/></button>
             <button onClick={() => remove(p)} aria-label="Delete" className="p-2 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
           </div>

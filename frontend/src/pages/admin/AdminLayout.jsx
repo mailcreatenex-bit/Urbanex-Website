@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Users, BarChart3, FileText, LogOut, ArrowLeft, Building2, CalendarCheck, Star, BookOpen, Mail, Youtube, HandHeart, Bell, Wallet } from "lucide-react";
+import { Users, BarChart3, FileText, LogOut, ArrowLeft, Building2, CalendarCheck, Star, BookOpen, Mail, Youtube, HandHeart, Bell, Wallet, FileSearch } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import { ADMIN } from "@/constants/testIds";
 
@@ -20,6 +20,7 @@ export default function AdminLayout() {
     { to: "/admin/visits", label: "Visits", icon: CalendarCheck, tid: "admin-nav-visits" },
     { to: "/admin/properties", label: "Properties", icon: Building2, tid: "admin-nav-properties" },
     { to: "/admin/listings", label: "Owner listings", icon: Wallet, tid: "admin-nav-listings" },
+    { to: "/admin/land-reports", label: "Land reports", icon: FileSearch, tid: "admin-nav-land-reports" },
     { to: "/admin/reviews", label: "Reviews", icon: Star, tid: "admin-nav-reviews" },
     { to: "/admin/posts", label: "Guides", icon: BookOpen, tid: "admin-nav-posts" },
     { to: "/admin/push", label: "Push alerts", icon: Bell, tid: "admin-nav-push" },
