@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
 import { CONSTRUCTION_STEPS, CONSTRUCTION_HIGHLIGHTS, CONSTR_VIDEO } from "@/constants/seedData";
@@ -151,7 +152,8 @@ export default function ConstructionPage() {
               <Input data-testid={CONSTR.plot} placeholder="Plot size (sqft) & zone" value={form.plot} onChange={set("plot")} className="h-12 bg-white border-urbanex-navy/10 rounded-lg"/>
               <Input data-testid={CONSTR.budget} placeholder="Rough budget (₹)" value={form.budget} onChange={set("budget")} className="h-12 bg-white border-urbanex-navy/10 rounded-lg"/>
               <Turnstile value={ts} onChange={setTs}/>
-              <Button data-testid={CONSTR.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="w-full h-12 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full font-medium">
+              <PrivacyConsent tone="light"/>
+      <Button data-testid={CONSTR.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="w-full h-12 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy rounded-full font-medium">
                 {busy ? "Sending…" : "Request estimate"} <ArrowRight className="w-4 h-4 ml-1"/>
               </Button>
             </form>

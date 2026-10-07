@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
@@ -52,11 +53,12 @@ export default function InterestModal() {
             <input required className={inp} placeholder={t("interest.phone")} value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" pattern="[0-9+()\-\s]{6,20}" data-testid="interest-phone" autoComplete="tel"/>
             {error && <div className="text-sm text-red-600" role="alert">{error}</div>}
             <Turnstile value={ts} onChange={setTs}/>
-            <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="interest-submit" className="w-full bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy py-3 rounded-full text-sm font-medium disabled:opacity-50">
+            <PrivacyConsent tone="light"/>
+      <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="interest-submit" className="w-full bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy py-3 rounded-full text-sm font-medium disabled:opacity-50">
               {busy ? t("common.loading") : t("interest.submit")}
             </button>
             <p className="text-[11px] text-urbanex-navy/50 leading-snug">
-              {t("interest.consent")} {t("interest.owner")} <Link to="/privacy" onClick={closeModal} className="underline">{t("interest.privacy")}</Link>
+              {t("interest.owner")}
             </p>
           </form>
         ) : (

@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -150,6 +151,7 @@ function VideoBooking() {
       <input required type="email" className={inp} placeholder={t("nri.video.email")} value={form.email} onChange={set("email")} maxLength={200}/>
       <textarea className={inp} rows={2} placeholder={t("visit.note")} value={form.note} onChange={set("note")} maxLength={500}/>
       <Turnstile value={ts} onChange={setTs}/>
+      <PrivacyConsent tone="light"/>
       <button disabled={!slot || busy || (TURNSTILE_ENABLED && !ts)} data-testid="nri-video-submit" className="bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-8 py-3 rounded-full text-sm font-medium disabled:opacity-50">{t("nri.video.submit")}</button>
     </form>
   );
@@ -220,6 +222,7 @@ function LeadForm() {
         <textarea className={`${inp} sm:col-span-2`} rows={3} placeholder={t("nri.lead.message")} value={f.message} onChange={set("message")} maxLength={1500}/>
       </div>
       <Turnstile value={ts} onChange={setTs}/>
+      <PrivacyConsent tone="dark"/>
       <button disabled={busy || (TURNSTILE_ENABLED && !ts)} className="bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-8 py-3 rounded-full text-sm font-medium disabled:opacity-50">{t("nri.lead.submit")}</button>
     </form>
   );

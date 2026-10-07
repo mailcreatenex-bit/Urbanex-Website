@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarCheck } from "lucide-react";
@@ -90,6 +91,7 @@ export default function VisitBooking({ propertyId }) {
       <input type="email" className={input} placeholder={t("visit.email")} value={form.email} onChange={set("email")} maxLength={200}/>
       <textarea className={input} placeholder={t("visit.note")} value={form.note} onChange={set("note")} maxLength={500} rows={2}/>
       <Turnstile value={ts} onChange={setTs}/>
+      <PrivacyConsent tone="light"/>
       <button type="submit" disabled={!slot || busy || (TURNSTILE_ENABLED && !ts)} data-testid="visit-submit"
         className="w-full bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy py-3 rounded-full text-sm font-medium disabled:opacity-50">
         {t("visit.submit")}

@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -48,7 +49,8 @@ function RequestForm({ info }) {
         <label className="col-span-2">Khatian no<input className={`${inp} mt-1`} value={f.khatian_no} onChange={set("khatian_no")}/></label>
         <label className="col-span-2">Anything else we should know<textarea rows={2} className={`${inp} mt-1`} maxLength={500} value={f.note} onChange={set("note")}/></label>
         <div className="col-span-2"><Turnstile value={ts} onChange={setTs}/></div>
-        <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="lr-submit" className="col-span-2 bg-urbanex-navy text-urbanex-ivory rounded-full py-3 text-sm disabled:opacity-50">{busy ? "Sending…" : `Continue to pay ${info ? inrFull(info.price) : ""}`}</button>
+        <PrivacyConsent tone="light"/>
+      <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="lr-submit" className="col-span-2 bg-urbanex-navy text-urbanex-ivory rounded-full py-3 text-sm disabled:opacity-50">{busy ? "Sending…" : `Continue to pay ${info ? inrFull(info.price) : ""}`}</button>
       </form>
       <div className="lg:col-span-2 space-y-4">
         <div className="rounded-2xl bg-urbanex-navy text-urbanex-ivory p-6">

@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, MessageCircle } from "lucide-react";
@@ -57,7 +58,8 @@ export default function LeadMini({ open, onClose, title, intro, cta = "Send", on
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className={inp} data-testid={`${testId}-name`}/>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp number" inputMode="tel" autoComplete="tel" className={inp} data-testid={`${testId}-phone`}/>
               <Turnstile value={ts} onChange={setTs}/>
-              <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid={`${testId}-send`} className="w-full h-12 rounded-full bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy font-medium disabled:opacity-60">{busy ? "Sending…" : cta}</button>
+              <PrivacyConsent tone="light"/>
+      <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid={`${testId}-send`} className="w-full h-12 rounded-full bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy font-medium disabled:opacity-60">{busy ? "Sending…" : cta}</button>
               <p className="text-[11px] text-urbanex-navy/45 text-center">Only Ayan sees your number. No spam, and you can say stop at any time.</p>
             </form>
           </>

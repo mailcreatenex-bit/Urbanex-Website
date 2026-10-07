@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { waLink } from "@/lib/config";
@@ -76,7 +77,8 @@ export default function ContactPage() {
             <Textarea data-testid={CONTACT.message} value={form.message} onChange={set("message")} rows={5} placeholder="Tell us your budget, timeline and any specifics." className="mt-2 bg-urbanex-cream border-urbanex-navy/10 rounded-lg"/>
           </div>
           <div className="mt-6"><Turnstile value={ts} onChange={setTs}/></div>
-          <Button data-testid={CONTACT.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="mt-8 bg-urbanex-navy hover:bg-urbanex-navyLight text-urbanex-ivory rounded-full h-12 px-8">
+          <PrivacyConsent tone="light"/>
+      <Button data-testid={CONTACT.submit} disabled={busy || (TURNSTILE_ENABLED && !ts)} type="submit" className="mt-8 bg-urbanex-navy hover:bg-urbanex-navyLight text-urbanex-ivory rounded-full h-12 px-8">
             {busy ? "Sending…" : "Request a callback"}
           </Button>
 

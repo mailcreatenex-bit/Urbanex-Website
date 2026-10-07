@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -65,7 +66,8 @@ export default function FreeCheckPage() {
                 <input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="Phone / WhatsApp number" inputMode="tel" autoComplete="tel" className={inp} data-testid="free-phone"/>
                 <textarea value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} rows={3} maxLength={500} placeholder="Where is the plot, and what are you worried about? (optional)" className={`${inp} h-auto py-3`}/>
                 <Turnstile value={ts} onChange={setTs}/>
-                <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="free-send" className="btn-shine w-full h-12 rounded-full bg-urbanex-gold text-urbanex-navy font-medium disabled:opacity-60">{busy ? "Booking…" : st && st.left === 0 ? "Join the list for next week" : "Book my free check"}</button>
+                <PrivacyConsent tone="dark"/>
+      <button disabled={busy || (TURNSTILE_ENABLED && !ts)} data-testid="free-send" className="btn-shine w-full h-12 rounded-full bg-urbanex-gold text-urbanex-navy font-medium disabled:opacity-60">{busy ? "Booking…" : st && st.left === 0 ? "Join the list for next week" : "Book my free check"}</button>
               </form>
             )}
           </div>

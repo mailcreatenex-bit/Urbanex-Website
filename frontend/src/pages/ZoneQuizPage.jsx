@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Link2, MapPin, MessageCircle, Share2 } from "lucide-react";
@@ -94,6 +95,7 @@ function LeadForm({ id }) {
         <input required className={inp} placeholder={t("quiz.lead.phone")} value={f.phone} onChange={set("phone")} inputMode="tel" pattern="[0-9+()\-\s]{6,20}"/>
       </div>
       <Turnstile value={ts} onChange={setTs}/>
+      <PrivacyConsent tone="dark"/>
       <button disabled={busy || (TURNSTILE_ENABLED && !ts)} className="bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-6 py-2.5 rounded-full text-sm font-medium disabled:opacity-50">{t("quiz.lead.submit")}</button>
     </form>
   );

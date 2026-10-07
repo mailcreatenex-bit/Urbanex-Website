@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useState } from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +51,8 @@ export default function DigestSignup({ dark = false }) {
       <div className="flex gap-2">
         <input type="email" required aria-label={t("digest.email")} placeholder={t("digest.email")} value={email || user?.email || ""} onChange={(e) => setEmail(e.target.value)}
           className={`flex-1 min-w-0 border rounded-full px-4 py-2 text-sm ${box}`} maxLength={200} data-testid="digest-email"/>
-        <button disabled={busy || (TURNSTILE_ENABLED && !ts)} className="bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50" data-testid="digest-submit">{t("digest.submit")}</button>
+        <PrivacyConsent tone="light"/>
+      <button disabled={busy || (TURNSTILE_ENABLED && !ts)} className="bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50" data-testid="digest-submit">{t("digest.submit")}</button>
       </div>
       <input aria-label={t("digest.name")} placeholder={t("digest.name")} value={name} onChange={(e) => setName(e.target.value)} className={`w-full border rounded-full px-4 py-2 text-sm ${box}`} maxLength={120}/>
       <label className={`flex items-center gap-2 text-xs ${muted}`}><input type="checkbox" checked={wa} onChange={(e) => setWa(e.target.checked)} className="accent-[#C5A059]"/> {t("digest.whatsapp")}</label>

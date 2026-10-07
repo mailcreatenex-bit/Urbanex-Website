@@ -1,3 +1,4 @@
+import PrivacyConsent from "@/components/common/PrivacyConsent";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -225,7 +226,8 @@ export default function VastuCompassPage() {
                   <input value={lead.name} onChange={(e) => setLead(l => ({ ...l, name: e.target.value }))} placeholder="Your name" autoComplete="name" className="w-full rounded-xl bg-white/70 border border-urbanex-navy/10 px-4 py-3 text-sm placeholder:text-urbanex-navy/45" data-testid="vastu-name"/>
                   <input value={lead.phone} onChange={(e) => setLead(l => ({ ...l, phone: e.target.value }))} placeholder="Phone / WhatsApp" inputMode="tel" autoComplete="tel" className="w-full rounded-xl bg-white/70 border border-urbanex-navy/10 px-4 py-3 text-sm placeholder:text-urbanex-navy/45" data-testid="vastu-phone"/>
                   <Turnstile value={ts} onChange={setTs}/>
-                  <div className="flex flex-wrap gap-2">
+                  <PrivacyConsent tone="light"/>
+      <div className="flex flex-wrap gap-2">
                     <button disabled={TURNSTILE_ENABLED && !ts} className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-3 text-sm disabled:opacity-50" data-testid="vastu-send">Send my report <ArrowRight className="w-4 h-4"/></button>
                     <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-urbanex-navy/40 px-5 py-3 text-sm"><MessageCircle className="w-4 h-4"/> WhatsApp</a>
                   </div>

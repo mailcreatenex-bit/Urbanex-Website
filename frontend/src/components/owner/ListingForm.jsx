@@ -68,7 +68,7 @@ export default function ListingForm({ existing, onSaved, onCancel }) {
           <Field label="Your phone / WhatsApp" className="col-span-2" hint="Only Urbanex sees this. Buyers contact you through us."><input required type="tel" inputMode="tel" className={inp} value={f.phone} onChange={set("phone")} placeholder="98300 12345"/></Field>
           <label className="col-span-2 flex items-start gap-2 text-xs text-urbanex-navy/70 leading-relaxed">
             <input type="checkbox" required checked={f.accepted_terms} onChange={set("accepted_terms")} className="mt-0.5 accent-[#C5A059]" data-testid="owner-terms"/>
-            <span>I am the owner or an authorised agent of this property and the details are true. I understand that the listing is free for the first few days, then needs the listing fee paid by UPI, and that Urbanex Realty may remove any listing that is wrong, duplicated or unpaid. Urbanex does not verify owner listings.</span>
+            <span>I am the owner or an authorised agent of this property and the details are true. I understand that the listing is free for the first few days, then needs the listing fee paid by UPI, and that Urbanex Realty may remove any listing that is wrong, duplicated or unpaid. Urbanex does not verify owner listings. <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.</span>
           </label>
         </>
       )}
