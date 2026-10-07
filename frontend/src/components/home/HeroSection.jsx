@@ -13,7 +13,8 @@ import Counter from "@/components/fx/Counter";
 // On top sit depth layers that also react to the cursor, a finger drag or the phone's tilt (Android).
 // The poster is the film's own first frame (32 KB), so when the video fades in nothing visibly changes.
 export const HERO_IMG = "/videos/hero-poster.jpg";
-const PLAY_END = 0.62;     // the film has finished playing here; the whole stage then fades away instead of sitting paused
+export const HERO_SCROLL = 180;   // vh of scrolling the hero lasts: 80 for the film, then 100 while the next section slides up over it
+const PLAY_END = 80 / HERO_SCROLL;     // the film has finished playing here; the whole stage then fades away instead of sitting paused
 const HEADLINE = ["Homes", "worth", "every", "rupee", "—", "chosen,", "built,", "delivered."];
 
 function useDepthPointer(ref) {
@@ -43,7 +44,7 @@ function useDepthPointer(ref) {
 }
 
 // Data Saver or reduced motion: keep the poster photo only (and a normal-height hero)
-const wantVideo = () => {
+export const wantVideo = () => {
   try { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !navigator.connection?.saveData; } catch { return true; }
 };
 
@@ -59,7 +60,7 @@ export default function HeroSection() {
 
   // 0 when the hero reaches the top, 1 when the pinned stage is about to be released: the whole film plays in between
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const stageOpacity = useTransform(scrollYProgress, [PLAY_END, 0.9], [1, 0]);
+  const stageOpacity = useTransform(scrollYProgress, [PLAY_END, 0.97], [1, 0]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.3, 0.6], [1, 0.9, 0]);
   const contentY = useTransform(scrollYProgress, [0, 1], [0, -60]);
   const hintOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
@@ -118,7 +119,7 @@ export default function HeroSection() {
   const depth = (k) => ({ transform: `translate3d(calc(var(--mx, 0) * ${k}px), calc(var(--my, 0) * ${k * 0.7}px), 0)` });
 
   return (
-    <section ref={ref} data-testid={HOME.hero} className={`relative bg-urbanex-navy ${video ? "h-[200vh]" : "h-[100svh]"}`} style={{ "--mx": 0, "--my": 0 }}>
+    <section ref={ref} data-testid={HOME.hero} className={`relative bg-urbanex-navy ${video ? "" : "h-[100svh]"}`} style={{ "--mx": 0, "--my": 0, ...(video ? { height: `${100 + HERO_SCROLL}vh` } : {}) }}>
       {/* The stage stays pinned while you scroll through the section */}
       <motion.div style={{ opacity: video ? stageOpacity : 1 }} className="sticky top-0 h-[100svh] w-full overflow-hidden">
         {/* Layer 1: poster photo, then the scroll-driven video fades in over it */}

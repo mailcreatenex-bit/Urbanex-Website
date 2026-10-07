@@ -11,7 +11,7 @@ const IDEAS = ["3BHK flat near Goda under 60 lakh", "plot in Borehat", "villa wi
 const KEY = { en: "en-IN", bn: "bn-IN", hi: "hi-IN" };
 
 // "Just say what you want": speak or type it in any of three languages and the site finds the homes and video tours.
-export default function Concierge() {
+export default function Concierge({ overlap = false }) {
   const [text, setText] = useState("");
   const [lang, setLang] = useState("en-IN");
   const [on, setOn] = useState(false);
@@ -56,9 +56,9 @@ export default function Concierge() {
 
   return (
     <section id="concierge" className="sec-dark relative z-10" data-testid="concierge"
-      style={{ marginTop: "-50vh", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 40vh)", maskImage: "linear-gradient(to bottom, transparent 0, #000 40vh)" }}>   {/* rises over the end of the hero film, which fades out behind it */}
+      style={overlap ? { marginTop: "-100vh", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 16vh)", maskImage: "linear-gradient(to bottom, transparent 0, #000 16vh)" } : undefined}>   {/* rises over the end of the hero film, which fades out behind it */}
       <div className="aurora"/>
-      <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.9, ease: "easeOut" }} className="max-w-5xl mx-auto px-5 md:px-10 py-24 md:py-32 text-center" style={{ paddingTop: "calc(30vh + 3rem)" }}>
+      <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.9, ease: "easeOut" }} className="max-w-5xl mx-auto px-5 md:px-10 py-24 md:py-32 text-center" style={overlap ? { paddingTop: "9rem" } : undefined}>
         <div className="chapter" data-n="01">Ask Urbanex</div>
         <h2 className="mt-5 font-display text-5xl md:text-7xl leading-[0.98] tracking-tight text-balance">Just <em className="italic text-gold-gradient">say</em> what you want.</h2>
         <p className="mt-5 text-urbanex-ivory/65 max-w-xl mx-auto">Speak or type, in English, বাংলা or हिन्दी. We understand the area, the size and the budget, and show you what fits.</p>

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck, Sparkles, HandshakeIcon, Hammer } from "lucide-react";
-import HeroSection from "@/components/home/HeroSection";
+import HeroSection, { wantVideo } from "@/components/home/HeroSection";
 import PromoBand from "@/components/home/PromoBand";
 import ZonesMarquee from "@/components/home/ZonesMarquee";
 import TestimonialsSlider from "@/components/home/TestimonialsSlider";
@@ -46,7 +46,7 @@ export default function HomePage() {
   return (
     <div>
       <HeroSection/>
-      <Concierge/>
+      <Concierge overlap={wantVideo()}/>
       <GreetingBand/>
       <Triptych/>
       <Strip/>
