@@ -159,13 +159,14 @@ async def lifespan(_app: FastAPI):
     client.close()
 
 
-DISABLE_DOCS = os.environ.get("DISABLE_DOCS", "0").strip().lower() in ("1", "true", "yes")      # the public site does not need to show its whole API map
+ON_RENDER = bool(os.environ.get("RENDER"))        # Render sets this itself; on that host the safe settings below are the default
+DISABLE_DOCS = os.environ.get("DISABLE_DOCS", "1" if ON_RENDER else "0").strip().lower() in ("1", "true", "yes")      # the public site does not need to show its whole API map
 app = FastAPI(title="Urbanex Realty API", lifespan=lifespan,
               docs_url=None if DISABLE_DOCS else "/docs", redoc_url=None if DISABLE_DOCS else "/redoc", openapi_url=None if DISABLE_DOCS else "/openapi.json")
 api = APIRouter(prefix="/api")
 
 # =============== Helpers ===============
-COOKIE_SAMESITE = os.environ.get("COOKIE_SAMESITE", "none").strip().lower()
+COOKIE_SAMESITE = os.environ.get("COOKIE_SAMESITE", "lax" if ON_RENDER else "none").strip().lower()
 if COOKIE_SAMESITE not in ("none", "lax", "strict"):
     COOKIE_SAMESITE = "none"
 
@@ -176,7 +177,7 @@ def new_id(prefix: str = "") -> str:
     return f"{prefix}{uuid.uuid4().hex[:16]}"
 
 _hits: dict = defaultdict(deque)
-TRUST_PROXY = os.environ.get("TRUST_PROXY", "0").strip().lower() in ("1", "true", "yes")     # set on hosts that sit behind a proxy (Netlify + Render)
+TRUST_PROXY = os.environ.get("TRUST_PROXY", "1" if ON_RENDER else "0").strip().lower() in ("1", "true", "yes")     # set on hosts that sit behind a proxy (Netlify + Render)
 
 def client_ip(request: Request) -> str:
     """The visitor's address. Behind a proxy every request comes from the proxy, so with TRUST_PROXY the address the proxy reports is used;
