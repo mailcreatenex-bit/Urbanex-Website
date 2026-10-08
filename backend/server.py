@@ -17,6 +17,7 @@ import math
 import time
 import html
 import asyncio
+import socket
 import smtplib
 import logging
 from email.message import EmailMessage
@@ -158,10 +159,16 @@ async def lifespan(_app: FastAPI):
     client.close()
 
 
-app = FastAPI(title="Urbanex Realty API", lifespan=lifespan)
+DISABLE_DOCS = os.environ.get("DISABLE_DOCS", "0").strip().lower() in ("1", "true", "yes")      # the public site does not need to show its whole API map
+app = FastAPI(title="Urbanex Realty API", lifespan=lifespan,
+              docs_url=None if DISABLE_DOCS else "/docs", redoc_url=None if DISABLE_DOCS else "/redoc", openapi_url=None if DISABLE_DOCS else "/openapi.json")
 api = APIRouter(prefix="/api")
 
 # =============== Helpers ===============
+COOKIE_SAMESITE = os.environ.get("COOKIE_SAMESITE", "none").strip().lower()
+if COOKIE_SAMESITE not in ("none", "lax", "strict"):
+    COOKIE_SAMESITE = "none"
+
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -169,12 +176,35 @@ def new_id(prefix: str = "") -> str:
     return f"{prefix}{uuid.uuid4().hex[:16]}"
 
 _hits: dict = defaultdict(deque)
+TRUST_PROXY = os.environ.get("TRUST_PROXY", "0").strip().lower() in ("1", "true", "yes")     # set on hosts that sit behind a proxy (Netlify + Render)
+
+def client_ip(request: Request) -> str:
+    """The visitor's address. Behind a proxy every request comes from the proxy, so with TRUST_PROXY the address the proxy reports is used;
+    without it, every visitor would share one rate-limit bucket and one person could lock everyone out."""
+    import ipaddress
+    cands = []
+    if TRUST_PROXY:
+        cands += [request.headers.get("x-nf-client-connection-ip", ""), request.headers.get("cf-connecting-ip", ""),
+                  request.headers.get("x-forwarded-for", "").split(",")[0]]
+    cands.append(request.client.host if request.client else "")
+    for c in cands:
+        try:
+            return str(ipaddress.ip_address(c.strip()))
+        except ValueError:
+            continue
+    return "unknown"
+
+def _prune_hits(t: float):
+    for k in [k for k, q in _hits.items() if not q or t - q[-1] > 3600]:
+        _hits.pop(k, None)
 
 def rate_limit(request: Request, bucket: str, limit: int, window: int = 60):
     """Small in-process sliding-window limiter keyed by client IP (per worker)."""
-    ip = request.client.host if request.client else "unknown"
-    q = _hits[(bucket, ip)]
+    ip = client_ip(request)
     t = time.monotonic()
+    if len(_hits) > 20000:          # an attacker inventing addresses must not be able to grow memory without end
+        _prune_hits(t)
+    q = _hits[(bucket, ip)]
     while q and t - q[0] > window:
         q.popleft()
     if len(q) >= limit:
@@ -250,7 +280,7 @@ async def require_human(request: Request, token: Optional[str]):
     if not token:
         raise HTTPException(400, "Please complete the bot check")
     try:
-        ok = await turnstile_check(token, request.client.host if request.client else None)
+        ok = await turnstile_check(token, client_ip(request))
     except Exception as e:  # if Cloudflare is unreachable, do not lose real leads
         logging.warning(f"Turnstile check unavailable: {type(e).__name__}")
         return
@@ -262,7 +292,7 @@ def device_id_of(request: Request) -> Optional[str]:
     return v if re.fullmatch(r"[A-Za-z0-9_-]{16,64}", v) else None
 
 def ip_hash_of(request: Request) -> str:
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
     return hashlib.sha256(f"{IP_HASH_SALT}:{ip}".encode()).hexdigest()[:16]
 
 async def track_submission(request: Request, kind: str, phone: Optional[str]) -> List[str]:
@@ -919,7 +949,7 @@ async def auth_session(request: Request, response: Response):
     })
     response.set_cookie(
         "session_token", session_token,
-        max_age=7 * 24 * 60 * 60, httponly=True, secure=True, samesite="none", path="/",
+        max_age=7 * 24 * 60 * 60, httponly=True, secure=True, samesite=COOKIE_SAMESITE, path="/",
     )
     return {
         "user": {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "picture": user.get("picture"), "is_admin": is_admin},
@@ -2703,7 +2733,7 @@ async def press_interested(payload: InterestIn, request: Request, response: Resp
             contact["flags"] = sorted(set(contact.get("flags") or []) | set(flags))
         token = secrets.token_urlsafe(32)
         await db.contact_tokens.insert_one({"hash": hash_token(token), "contact_id": contact["id"], "created_at": now_utc().isoformat()})
-        response.set_cookie(CONTACT_COOKIE, token, max_age=365 * 24 * 3600, httponly=True, secure=True, samesite="none", path="/")
+        response.set_cookie(CONTACT_COOKIE, token, max_age=365 * 24 * 3600, httponly=True, secure=True, samesite=COOKIE_SAMESITE, path="/")
         new_contact = True
     first = await record_interest(contact, payload.item_type, item)
     info = await price_info(payload.item_type, item["id"])
@@ -5494,14 +5524,33 @@ def safe_recording_url(url: str) -> bool:
     except ValueError:
         return "." in u.hostname
 
+async def host_is_public(hostname: str) -> bool:
+    """Resolve the name and refuse anything that points inside a private network (stops a recording link from reaching internal services)."""
+    import ipaddress
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
+    except OSError:
+        return False
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0].split("%")[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+            return False
+    return bool(infos)
+
 async def fetch_recording(url: str) -> bytes:
+    from urllib.parse import urlparse
+    if not safe_recording_url(url) or not await host_is_public(urlparse(url).hostname):
+        raise RuntimeError("The recording link must be a public https address")
+    buf = bytearray()
     async with httpx.AsyncClient(timeout=60, follow_redirects=False) as hc:
-        r = await hc.get(url)
-    if r.status_code != 200:
-        raise RuntimeError(f"The recording could not be downloaded ({r.status_code})")
-    if len(r.content) > MAX_AUDIO_BYTES_AI:
-        raise RuntimeError("The recording is too large")
-    return r.content
+        async with hc.stream("GET", url) as r:
+            if r.status_code != 200:
+                raise RuntimeError(f"The recording could not be downloaded ({r.status_code})")
+            async for chunk in r.aiter_bytes():
+                buf += chunk
+                if len(buf) > MAX_AUDIO_BYTES_AI:
+                    raise RuntimeError("The recording is too large")
+    return bytes(buf)
 
 async def run_webhook_call(p: dict):
     try:
@@ -5522,6 +5571,7 @@ async def run_webhook_call(p: dict):
 async def calls_webhook(payload: CallWebhookIn, request: Request):
     if not CALL_WEBHOOK_SECRET:
         raise HTTPException(503, "Call recording is not set up")
+    rate_limit(request, "webhook_key", 30)
     given = request.headers.get("x-webhook-key", "") or request.query_params.get("key", "")
     if not secrets.compare_digest(given.encode(), CALL_WEBHOOK_SECRET.encode()):
         raise HTTPException(401, "Wrong key")
@@ -6127,6 +6177,39 @@ async def serve_upload(name: str):
     if data is None:
         raise HTTPException(404, "Not found")
     return Response(content=data, media_type=UPLOAD_TYPES[name.rsplit(".", 1)[1]], headers={"Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff"})
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(self), geolocation=(self), payment=(), usb=(), interest-cohort=()",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
+PRIVATE_PATHS = ("/api/admin", "/api/owner", "/api/auth", "/api/viewer", "/api/me", "/api/my")
+MAX_BODY = 30 * 1024 * 1024            # the largest honest request is a few photos
+MAX_JSON_BODY = 2 * 1024 * 1024
+
+@app.middleware("http")
+async def security_layer(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api"):
+        declared = request.headers.get("content-length", "")
+        if declared.isdigit():
+            n = int(declared)
+            ctype = request.headers.get("content-type", "")
+            if n > MAX_BODY or (n > MAX_JSON_BODY and ctype.startswith("application/json")):
+                return JSONResponse({"detail": "Request too large"}, status_code=413)
+        try:
+            rate_limit(request, "all", 600, 60)         # one visitor cannot hammer the whole server
+        except HTTPException as e:
+            return JSONResponse({"detail": e.detail}, status_code=e.status_code, headers={"Retry-After": "30"})
+    response = await call_next(request)
+    for k, v in SECURITY_HEADERS.items():
+        response.headers.setdefault(k, v)
+    if path.startswith(PRIVATE_PATHS):
+        response.headers["Cache-Control"] = "no-store"      # never let a shared cache keep private data
+    return response
 
 @app.middleware("http")
 async def csrf_origin_check(request: Request, call_next):

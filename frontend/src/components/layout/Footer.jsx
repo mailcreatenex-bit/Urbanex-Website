@@ -57,6 +57,7 @@ export default function Footer() {
             <li><Link to="/contact" className="hover:text-urbanex-gold">Contact</Link></li>
             <li><Link to="/terms" className="hover:text-urbanex-gold">Terms</Link></li>
             <li><Link to="/privacy" className="hover:text-urbanex-gold">Privacy</Link></li>
+            <li><Link to="/security" className="hover:text-urbanex-gold">Security</Link></li>
           </ul>
         </div>
 

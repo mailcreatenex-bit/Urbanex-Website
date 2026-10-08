@@ -27,6 +27,12 @@ services:
         sync: false
       - key: KEEPALIVE_URL        # this server's own Render address (shown at the top of the service page), so it keeps itself awake
         sync: false
+      - key: TRUST_PROXY          # the visitor's address comes from Netlify, so limits apply per visitor, not to everyone at once
+        value: "1"
+      - key: COOKIE_SAMESITE      # the site and the API share one address, so the sign-in cookie never needs to cross sites
+        value: lax
+      - key: DISABLE_DOCS         # do not publish the API map on the public internet
+        value: "1"
       - key: UPLOADS_IN_DB        # the free disk is wiped on restart, so uploads are also kept in the database
         value: "1"
       - key: IP_HASH_SALT

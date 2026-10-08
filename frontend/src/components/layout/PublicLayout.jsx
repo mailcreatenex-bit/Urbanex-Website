@@ -15,7 +15,7 @@ const AssistantWidget = lazy(() => import("@/components/assistant/AssistantWidge
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
-  const bleed = pathname === "/" || pathname.startsWith("/construction") || pathname.startsWith("/vastu") || pathname === "/map" || pathname === "/free-check";   // pages that start with their own full-width scene sit under the dock
+  const bleed = pathname === "/" || pathname.startsWith("/construction") || pathname.startsWith("/vastu") || pathname === "/map" || pathname === "/free-check" || pathname === "/security";   // pages that start with their own full-width scene sit under the dock
   return (
     <div className="min-h-screen flex flex-col bg-urbanex-ivory film-grain">
       <ScrollProgress/>

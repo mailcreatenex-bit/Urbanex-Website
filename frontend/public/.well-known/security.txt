@@ -1,0 +1,6 @@
+# How to report a security problem with urbanex-realty.netlify.app. Please read https://urbanex-realty.netlify.app/security first.
+Contact: https://urbanex-realty.netlify.app/security
+Expires: 2027-10-09T00:00:00.000Z
+Preferred-Languages: en, bn, hi
+Canonical: https://urbanex-realty.netlify.app/.well-known/security.txt
+Policy: https://urbanex-realty.netlify.app/security

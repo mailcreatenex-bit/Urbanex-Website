@@ -60,6 +60,7 @@ const BookVisitPage = lazy(() => import("@/pages/BookVisitPage"));
 const WeeklyReportPage = lazy(() => import("@/pages/WeeklyReportPage"));
 const VastuCompassPage = lazy(() => import("@/pages/VastuCompassPage"));
 const MapPage = lazy(() => import("@/pages/MapPage"));
+const SecurityPage = lazy(() => import("@/pages/SecurityPage"));
 const FreeCheckPage = lazy(() => import("@/pages/FreeCheckPage"));
 const VastuReportPage = lazy(() => import("@/pages/VastuReportPage"));
 const ReferralLanding = lazy(() => import("@/pages/ReferralLanding"));
@@ -112,6 +113,7 @@ function AppRouter() {
         <Route path="/vastu" element={<VastuCompassPage/>}/>
         <Route path="/vastu/report/:token" element={<VastuReportPage/>}/>
         <Route path="/free-check" element={<FreeCheckPage/>}/>
+        <Route path="/security" element={<SecurityPage/>}/>
         <Route path="/r/:code" element={<ReferralLanding/>}/>
         <Route path="/map" element={<MapPage/>}/>
         <Route path="/list-your-property" element={<ListPropertyPage/>}/>
