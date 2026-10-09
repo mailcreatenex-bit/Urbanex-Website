@@ -2,11 +2,13 @@ package com.urbanex.callsync
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.telephony.SubscriptionManager
 import android.text.InputType
 import android.view.ViewGroup
 import android.widget.Button
@@ -30,6 +32,7 @@ class MainActivity : Activity() {
     private lateinit var key: EditText
     private lateinit var folderText: TextView
     private lateinit var statusText: TextView
+    private lateinit var simText: TextView
     private var folder = ""
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density).toInt()
@@ -87,6 +90,10 @@ class MainActivity : Activity() {
         col.addView(button("Choose the recordings folder") {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQ_FOLDER)
         })
+        col.addView(label("Which SIM is your business number?"))
+        simText = TextView(this).apply { text = Prefs.simLabel(this@MainActivity) }
+        col.addView(simText)
+        col.addView(button("Choose the business SIM") { chooseSim() })
         col.addView(button("Save and start") { saveAndStart() })
         col.addView(button("Send new recordings now") { runNow() })
         col.addView(button("Allow it to work in the background") {
@@ -116,6 +123,38 @@ class MainActivity : Activity() {
             folder = uri.toString()
             folderText.text = Uri.decode(folder)
         }
+    }
+
+    /** Lists the SIMs in the phone; only calls on the chosen one are sent, so personal calls stay on the phone. */
+    private fun chooseSim() {
+        val need = arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG)
+        if (need.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) {
+            requestPermissions(need, REQ_SIM)
+            return
+        }
+        val subs = try {
+            getSystemService(SubscriptionManager::class.java)?.activeSubscriptionInfoList ?: emptyList()
+        } catch (e: SecurityException) {
+            emptyList()
+        }
+        val labels = ArrayList<String>()
+        labels.add("All calls on this phone")
+        for (i in subs) labels.add("SIM ${i.simSlotIndex + 1}: ${i.carrierName ?: ""} ${i.number ?: ""}".trim())
+        AlertDialog.Builder(this).setTitle("Business SIM").setItems(labels.toTypedArray()) { _, which ->
+            if (which == 0) {
+                Prefs.setSim(this, -1, "", labels[0])
+            } else {
+                val s = subs[which - 1]
+                Prefs.setSim(this, s.subscriptionId, s.iccId ?: "", labels[which])
+            }
+            simText.text = labels[which]
+        }.show()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_SIM && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) chooseSim()
     }
 
     private fun saveAndStart() {
@@ -156,5 +195,6 @@ class MainActivity : Activity() {
     companion object {
         private const val REQ_FOLDER = 41
         private const val REQ_CONTACTS = 42
+        private const val REQ_SIM = 43
     }
 }

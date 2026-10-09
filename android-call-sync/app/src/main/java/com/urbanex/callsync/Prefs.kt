@@ -13,6 +13,15 @@ object Prefs {
     fun status(c: Context): String = sp(c).getString("status", "Not started yet") ?: ""
     fun sentCount(c: Context): Int = sp(c).getInt("sent", 0)
 
+    /** The business SIM: only calls made or received on it are sent. -1 means "every call on this phone". */
+    fun simSub(c: Context): Int = sp(c).getInt("simSub", -1)
+    fun simIcc(c: Context): String = sp(c).getString("simIcc", "") ?: ""
+    fun simLabel(c: Context): String = sp(c).getString("simLabel", "All calls on this phone") ?: ""
+
+    fun setSim(c: Context, sub: Int, icc: String, label: String) {
+        sp(c).edit().putInt("simSub", sub).putString("simIcc", icc).putString("simLabel", label).apply()
+    }
+
     fun save(c: Context, url: String, key: String, folder: String, sinceMs: Long) {
         sp(c).edit()
             .putString("url", url.trim().trimEnd('/'))

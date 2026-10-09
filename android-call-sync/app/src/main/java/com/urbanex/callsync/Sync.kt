@@ -1,7 +1,10 @@
 package com.urbanex.callsync
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.CallLog
 import android.provider.ContactsContract
 import androidx.documentfile.provider.DocumentFile
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,6 +20,7 @@ import java.time.Instant
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 /** Looks in the recordings folder, and sends every new call recording to the Urbanex server. */
 object Sync {
@@ -32,6 +36,14 @@ object Sync {
     )
     private const val MAX_BYTES = 14L * 1024 * 1024
     private const val SETTLE_MS = 20_000L // a file still being written is left for the next round
+    private const val MATCH_MS = 3 * 60_000L // a recording is saved within a few minutes of the call ending
+    private const val LOG_WAIT_MS = 10 * 60_000L // the call log can lag behind the recording a little
+
+    /** One line of the phone's call log. */
+    private class CallEntry(val number: String, val type: Int, val date: Long, val seconds: Long, val account: String, val sub: Int) {
+        fun endsNear(t: Long) = abs(date + seconds * 1000L - t) <= MATCH_MS
+        fun onSim(subId: Int, icc: String) = sub == subId || (account.isNotEmpty() && (account == subId.toString() || (icc.isNotEmpty() && account.startsWith(icc.take(18)))))
+    }
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(70, TimeUnit.SECONDS) // the free server can take about a minute to wake up
@@ -59,6 +71,14 @@ object Sync {
         var sent = 0
         var failed = false
         var waiting = 0
+        var otherSim = 0
+        val simSub = Prefs.simSub(c)
+        val simIcc = Prefs.simIcc(c)
+        val calls = if (simSub >= 0) loadCalls(c, since) else null
+        if (simSub >= 0 && calls == null) {
+            Prefs.setStatus(c, "Allow call-log access, or choose \"All calls on this phone\".")
+            return true
+        }
         for (f in listAudio(root, 2)) {
             val id = "${f.uri}|${f.length()}|${f.lastModified()}"
             if (id in done || f.lastModified() < since) continue
@@ -70,7 +90,33 @@ object Sync {
                 Prefs.markDone(c, id)
                 continue
             }
-            when (upload(c, url, key, f)) {
+            var phone: String? = null
+            var direction: String? = null
+            if (calls != null) {
+                // only the business SIM: find the call this recording belongs to, and check which SIM it used
+                val e = calls.firstOrNull { it.endsNear(f.lastModified()) }
+                if (e == null) {
+                    if (now - f.lastModified() < LOG_WAIT_MS) {
+                        waiting++
+                    } else {
+                        Prefs.markDone(c, id)
+                        otherSim++
+                    }
+                    continue
+                }
+                if (!e.onSim(simSub, simIcc)) {
+                    Prefs.markDone(c, id)
+                    otherSim++
+                    continue
+                }
+                phone = e.number.ifBlank { null }
+                direction = when (e.type) {
+                    CallLog.Calls.INCOMING_TYPE -> "incoming"
+                    CallLog.Calls.OUTGOING_TYPE -> "outgoing"
+                    else -> null
+                }
+            }
+            when (upload(c, url, key, f, phone, direction)) {
                 Outcome.SENT -> {
                     Prefs.markDone(c, id)
                     Prefs.addSent(c)
@@ -91,8 +137,38 @@ object Sync {
             waiting > 0 -> "$stamp: waiting for a recording to finish."
             else -> "$stamp: nothing new. Total sent: ${Prefs.sentCount(c)}."
         }
-        Prefs.setStatus(c, message)
+        val extra = if (otherSim > 0) " ($otherSim other-SIM or unmatched call(s) stayed on the phone.)" else ""
+        Prefs.setStatus(c, message + extra)
         return !failed
+    }
+
+    /** The recent call log, or null when the permission is missing. */
+    private fun loadCalls(c: Context, sinceMs: Long): List<CallEntry>? {
+        if (c.checkSelfPermission(Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) return null
+        val cols = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION, CallLog.Calls.PHONE_ACCOUNT_ID)
+        val where = "${CallLog.Calls.DATE} > ?"
+        val args = arrayOf((sinceMs - 86_400_000L).toString())
+        val order = "${CallLog.Calls.DATE} DESC"
+        // many phones also keep the SIM's id in a "subscription_id" column; use it when it exists
+        val withSub = try { c.contentResolver.query(CallLog.Calls.CONTENT_URI, cols + "subscription_id", where, args, order) } catch (e: Exception) { null }
+        val cur = withSub ?: try { c.contentResolver.query(CallLog.Calls.CONTENT_URI, cols, where, args, order) } catch (e: Exception) { null } ?: return null
+        val out = ArrayList<CallEntry>()
+        cur.use {
+            val iSub = if (withSub != null) it.getColumnIndex("subscription_id") else -1
+            while (it.moveToNext() && out.size < 500) {
+                out.add(
+                    CallEntry(
+                        number = it.getString(0) ?: "",
+                        type = it.getInt(1),
+                        date = it.getLong(2),
+                        seconds = it.getLong(3),
+                        account = it.getString(4) ?: "",
+                        sub = if (iSub >= 0) (it.getString(iSub)?.toIntOrNull() ?: -2) else -2,
+                    ),
+                )
+            }
+        }
+        return out
     }
 
     private fun listAudio(dir: DocumentFile, depth: Int): List<DocumentFile> {
@@ -110,7 +186,7 @@ object Sync {
 
     private enum class Outcome { SENT, SKIP, WRONG_KEY, RETRY }
 
-    private fun upload(c: Context, base: String, key: String, f: DocumentFile): Outcome {
+    private fun upload(c: Context, base: String, key: String, f: DocumentFile, phone: String?, direction: String?): Outcome {
         val name = f.name ?: "recording.m4a"
         val ext = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
         val type = (AUDIO[ext] ?: "application/octet-stream").toMediaType()
@@ -126,9 +202,12 @@ object Sync {
             .addFormDataPart("started_at", Instant.ofEpochMilli(f.lastModified()).toString())
         // Many phones name the file after the contact, not the number: look the number up in your contacts
         val compact = name.replace(Regex("[\\s\\-+()]"), "")
-        if (!Regex("\\d{10}").containsMatchIn(compact)) {
+        if (phone != null) {
+            form.addFormDataPart("phone", phone) // the number from the call log is exact
+        } else if (!Regex("\\d{10}").containsMatchIn(compact)) {
             contactNumber(c, name)?.let { form.addFormDataPart("phone", it) }
         }
+        if (direction != null) form.addFormDataPart("direction", direction)
         val req = Request.Builder()
             .url("$base/api/calls/device-upload")
             .header("X-Webhook-Key", key)
