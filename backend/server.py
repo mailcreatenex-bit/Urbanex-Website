@@ -2869,7 +2869,12 @@ async def yt_get(path: str, params: dict) -> dict:
     async with httpx.AsyncClient(timeout=20) as hc:
         r = await hc.get(f"https://www.googleapis.com/youtube/v3/{path}", params=params, headers={"X-Goog-Api-Key": YOUTUBE_API_KEY})
     if r.status_code != 200:
-        raise RuntimeError(f"YouTube API {path} returned {r.status_code}")
+        why = ""
+        try:
+            why = str((r.json().get("error") or {}).get("message") or "")[:140].replace(YOUTUBE_API_KEY, "***") if YOUTUBE_API_KEY else ""
+        except Exception:
+            pass
+        raise RuntimeError(f"YouTube API {path} returned {r.status_code}" + (f" ({why})" if why else ""))
     return r.json()
 
 async def youtube_uploads_playlist() -> str:

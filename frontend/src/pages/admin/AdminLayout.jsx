@@ -67,12 +67,15 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <div className="lg:hidden bg-urbanex-navy text-urbanex-ivory p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2"><div className="font-display text-lg">Urbanex CRM</div><NotificationBell mode="admin" dark/></div>
-        <div className="flex gap-2 text-xs overflow-x-auto max-w-[60%]">
+      {/* Mobile top bar: the name and bell on one line, the sections scroll sideways underneath */}
+      <div className="lg:hidden bg-urbanex-navy text-urbanex-ivory px-4 pt-3 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="font-display text-lg whitespace-nowrap">Urbanex CRM</div>
+          <NotificationBell mode="admin" dark/>
+        </div>
+        <div className="mt-2 flex gap-2 text-xs overflow-x-auto pb-1">
           {items.map(it => (
-            <NavLink key={it.to} to={it.to} className={({isActive}) => `px-3 py-1.5 rounded-full whitespace-nowrap ${isActive ? "bg-urbanex-gold text-urbanex-navy" : "bg-white/5"}`}>{it.label}</NavLink>
+            <NavLink key={it.to} to={it.to} className={({isActive}) => `shrink-0 px-3.5 py-2 rounded-full whitespace-nowrap ${isActive ? "bg-urbanex-gold text-urbanex-navy" : "bg-white/10"}`}>{it.label}</NavLink>
           ))}
         </div>
       </div>
