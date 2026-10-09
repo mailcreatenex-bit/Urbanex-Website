@@ -5293,7 +5293,7 @@ class DraftIn(BaseModel):
 
 class CommitIn(BaseModel):
     drafts: List[DraftIn] = Field(min_length=1, max_length=50)
-    source: Literal["handwritten", "voice", "typed", "call"] = "typed"
+    source: Literal["handwritten", "voice", "typed", "call", "textfile"] = "typed"
 
 async def save_person(d: dict, source: str, by: str, activity: Optional[dict] = None) -> dict:
     """Create the lead or fold the new information into the one that has this number."""

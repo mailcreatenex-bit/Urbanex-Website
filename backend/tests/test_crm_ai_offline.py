@@ -309,3 +309,14 @@ def test_owner_sees_interested_people_when_paid(c):
     assert c.get(f"/api/owner/listings/{pid}/leads", headers=ADMIN).status_code == 404              # only the owner
     # Ayan can always see them, and may open it up for everyone
     assert c.put("/api/admin/listing-settings", json={"leads_unlock": "always"}, headers=ADMIN).json()["leads_unlock"] == "always"
+
+
+def test_text_file_import_saves_in_batches_with_its_own_tag(c):
+    drafts = [{"name": f"File Person {i}", "phone": f"+9198{(i * 7919 + 3141592) % 10**6:06d}{i:02d}", "summary": "dekhte asbe", "notes": "From the file", "wants": {}} for i in range(50)]
+    first = c.post("/api/admin/crm/ai/commit", json={"drafts": drafts, "source": "textfile"}, headers=ADMIN)
+    assert first.status_code == 200 and first.json()["created"] == 50
+    again = c.post("/api/admin/crm/ai/commit", json={"drafts": drafts[:5], "source": "textfile"}, headers=ADMIN).json()
+    assert again["created"] == 0 and again["merged"] == 5          # the same number is never added twice
+    lead = c.get("/api/admin/leads", params={"q": "File Person 7"}, headers=ADMIN).json()[0]
+    assert "textfile" in lead["tags"]
+    assert c.post("/api/admin/crm/ai/commit", json={"drafts": drafts + drafts[:1], "source": "textfile"}, headers=ADMIN).status_code == 422   # 50 at a time

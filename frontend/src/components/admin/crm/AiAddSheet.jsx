@@ -1,34 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AudioLines, BookUser, Camera, CreditCard, FileText, Mic, Sparkles, Square, Trash2 } from "lucide-react";
+import { AudioLines, BookUser, Camera, CreditCard, FileText, Mic, Sparkles, Square, Trash2, Upload } from "lucide-react";
 import { api } from "@/lib/api";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { inrShort } from "@/lib/crm";
+import { aiLine, chunkPeople, parseTextFile, plainDraft } from "@/lib/chatImport";
 
 const inp = "w-full border rounded-lg px-3 py-2 text-sm bg-white";
 const SR = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const TABS = [["voice", "Speak", Mic], ["type", "Type or paste", FileText], ["notes", "Photo of notes", Camera], ["card", "Business card", CreditCard], ["contacts", "Phone contacts", BookUser], ["calls", "Call recordings", AudioLines]];
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const last10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
+const SHOWN = 30;   // a big import shows the first few to check; every one is saved
 const err = (e, f) => { const d = e?.response?.data?.detail; return typeof d === "string" ? d : f; };
 
 // Drafts the AI found: check and fix them, then save into the CRM.
 function Drafts({ drafts, setDrafts, source, onSaved }) {
   const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(0);
   const upd = (i, patch) => setDrafts(d => d.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const updW = (i, patch) => setDrafts(d => d.map((x, j) => (j === i ? { ...x, wants: { ...x.wants, ...patch } } : x)));
   const save = async () => {
     setBusy(true);
     try {
       const body = drafts.map(({ existing, phone_unclear, ...d }) => ({ ...d, phone: d.phone || phone_unclear || null }));
-      const { data } = await api.post("/admin/crm/ai/commit", { drafts: body, source });
-      toast.success(`${data.created} added, ${data.merged} updated`);
-      onSaved(data);
+      let created = 0, merged = 0;
+      for (let i = 0; i < body.length; i += 50) {          // the server takes 50 at a time
+        const { data } = await api.post("/admin/crm/ai/commit", { drafts: body.slice(i, i + 50), source });
+        created += data.created; merged += data.merged; setSent(Math.min(body.length, i + 50));
+      }
+      toast.success(`${created} added, ${merged} updated`);
+      onSaved({ created, merged });
     } catch (e) { toast.error(err(e, "Could not save")); } finally { setBusy(false); }
   };
   if (!drafts.length) return <div className="mt-4 text-sm text-gray-500">The AI did not find any customers. Try again with more detail or a clearer photo.</div>;
   return (
     <div className="mt-5 space-y-3" data-testid="ai-drafts">
       <div className="text-xs tracking-[0.2em] uppercase text-urbanex-gold">Check these, then save</div>
-      {drafts.map((d, i) => (
+      {drafts.length > SHOWN && <div className="text-xs text-gray-500">Showing the first {SHOWN} of {drafts.length} to check. All {drafts.length} will be saved.</div>}
+      {drafts.slice(0, SHOWN).map((d, i) => (
         <div key={i} className="rounded-xl border bg-white p-3 space-y-2">
           <div className="flex items-center gap-2">
             <input className={inp} value={d.name || ""} onChange={(e) => upd(i, { name: e.target.value })} placeholder="Name"/>
@@ -52,7 +62,7 @@ function Drafts({ drafts, setDrafts, source, onSaved }) {
           {d.existing && <div className="text-[11px] rounded bg-amber-50 text-amber-800 px-2 py-1">Already in your CRM as {d.existing.name} ({d.existing.status}). This will be added to that lead.</div>}
         </div>
       ))}
-      <button onClick={save} disabled={busy} data-testid="ai-save" className="w-full rounded-full bg-urbanex-navy text-urbanex-ivory py-2.5 text-sm disabled:opacity-50">{busy ? "Saving…" : `Save ${drafts.length} to the CRM`}</button>
+      <button onClick={save} disabled={busy} data-testid="ai-save" className="w-full rounded-full bg-urbanex-navy text-urbanex-ivory py-2.5 text-sm disabled:opacity-50">{busy ? `Saving… ${sent} of ${drafts.length}` : `Save ${drafts.length} to the CRM`}</button>
     </div>
   );
 }
@@ -125,14 +135,52 @@ export default function AiAddSheet({ open, onClose, onDone }) {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [phone, setPhone] = useState("");
-  const notesRef = useRef(null), cardRef = useRef(null), callsRef = useRef(null);
+  const notesRef = useRef(null), cardRef = useRef(null), callsRef = useRef(null), txtRef = useRef(null);
+  const [file, setFile] = useState(null);      // a long .txt that was read: { name, parsed }
+  const [prog, setProg] = useState(null);      // while the AI reads it in parts: { done, total, plain }
+  const stop = useRef(false);
 
-  useEffect(() => { if (open) { setDrafts(null); setResults(null); } }, [open, tab]);
+  useEffect(() => { if (open) { setDrafts(null); setResults(null); } else { stop.current = true; } }, [open, tab]);
 
   const fromText = async (t, kind) => {
     setBusy(true); setDrafts(null); setSource(kind === "voice" ? "voice" : "typed");
     try { const { data } = await api.post("/admin/crm/ai/text", { text: t, kind }); setDrafts(data.people); }
     catch (e) { toast.error(err(e, "The AI could not read that")); } finally { setBusy(false); }
+  };
+  // A .txt file: a short one goes into the box; a long one (a WhatsApp chat export) is split into people first.
+  const pickTxt = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    if (f.size > 3_000_000) return toast.error("That file is too large (3 MB max). Split it into two.");
+    const t = await f.text();
+    if (t.length <= 7800) { setText(t); setFile(null); toast.success("File loaded. Press “Read it with AI”."); return; }
+    const parsed = parseTextFile(t);
+    if (!parsed.people.length) return toast.error("No phone numbers found in that file");
+    setDrafts(null); setFile({ name: f.name, parsed });
+  };
+  const readBig = async (useAi) => {
+    const people = file.parsed.people;
+    setSource("textfile");
+    if (!useAi) { setDrafts(people.map(plainDraft)); setFile(null); return; }
+    const chunks = chunkPeople(people);
+    stop.current = false; setBusy(true); setProg({ done: 0, total: chunks.length, plain: 0 }); setDrafts(null);
+    const out = []; let plain = 0;
+    for (let i = 0; i < chunks.length && !stop.current; i++) {
+      let res = null;
+      for (let tr = 0; tr < 2 && !res && !stop.current; tr++) {
+        try { res = (await api.post("/admin/crm/ai/text", { text: chunks[i].map(aiLine).join("\n"), kind: "typed" })).data.people || []; }
+        catch { if (tr === 0) await sleep(4000); }
+      }
+      const byPhone = new Map((res || []).filter(a => a.phone).map(a => [last10(a.phone), a]));
+      for (const p of chunks[i]) {
+        const a = byPhone.get(last10(p.phone));
+        if (a) out.push({ ...a, name: a.name || p.name || null, phone: p.phone, notes: p.notes, role: a.role || p.role });
+        else { out.push(plainDraft(p)); plain++; }      // the AI skipped or failed on this one: keep it as it was written
+      }
+      setProg({ done: i + 1, total: chunks.length, plain });
+    }
+    // anything not reached (stopped early) is kept as a plain draft too, so no number in the file is lost
+    if (stop.current) { const done = new Set(out.map(d => last10(d.phone))); for (const p of people) if (!done.has(last10(p.phone))) out.push(plainDraft(p)); }
+    setDrafts(out); setProg(null); setFile(null); setBusy(false);
   };
   const fromPhotos = async (e, kind) => {
     const files = [...e.target.files]; if (!files.length) return;
@@ -162,7 +210,31 @@ export default function AiAddSheet({ open, onClose, onDone }) {
             <div className="space-y-3">
               <p className="text-xs text-gray-500">Paste a WhatsApp chat, an e-mail or your own notes. English, Bengali or Hindi all work.</p>
               <textarea rows={7} className={inp} value={text} onChange={(e) => setText(e.target.value)} placeholder={"Rahul Sen 98300 11223 wants 3bhk Goda budget 65 lakh\nMita Das 98301 22334 plot Borehat 28 lakh, call Monday"} data-testid="ai-text"/>
-              <button type="button" disabled={text.trim().length < 3 || busy} onClick={() => fromText(text, "typed")} data-testid="ai-read" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold px-5 py-2.5 text-sm disabled:opacity-40"><Sparkles className="w-4 h-4 text-urbanex-gold"/> Read it with AI</button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" disabled={text.trim().length < 3 || busy} onClick={() => fromText(text, "typed")} data-testid="ai-read" className="inline-flex items-center gap-2 rounded-full border border-urbanex-gold px-5 py-2.5 text-sm disabled:opacity-40"><Sparkles className="w-4 h-4 text-urbanex-gold"/> Read it with AI</button>
+                <button type="button" disabled={busy} onClick={() => txtRef.current?.click()} data-testid="ai-txt" className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm hover:border-urbanex-gold disabled:opacity-40"><Upload className="w-4 h-4"/> Upload a .txt file</button>
+                <input ref={txtRef} type="file" accept=".txt,text/plain" className="hidden" onChange={pickTxt} data-testid="ai-txt-file"/>
+              </div>
+              <p className="text-[11px] text-gray-400">A .txt file can be a WhatsApp chat (in WhatsApp: the chat, then ⋮, More, Export chat, Without media) or your own notes. Long files are read in parts.</p>
+              {file && (
+                <div className="rounded-xl border bg-white p-4 space-y-3" data-testid="ai-txt-found">
+                  <div className="text-sm"><b>{file.parsed.people.length}</b> people with phone numbers found in <span className="font-medium">{file.name}</span>
+                    <div className="text-xs text-gray-500 mt-0.5">{file.parsed.format}, {file.parsed.messages} messages, {file.parsed.withoutNumber} had no number and are skipped. Repeated numbers are merged into one person.</div></div>
+                  <div className="text-xs text-gray-600 space-y-1">{file.parsed.people.slice(0, 3).map(p => <div key={p.phone} className="truncate">{p.name || "(no name)"} · {p.phone} · {p.summary}</div>)}</div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => readBig(true)} data-testid="ai-txt-ai" className="inline-flex items-center gap-2 rounded-full bg-urbanex-navy text-urbanex-ivory px-5 py-2.5 text-sm"><Sparkles className="w-4 h-4 text-urbanex-gold"/> Read with AI (about {Math.max(1, Math.ceil(chunkPeople(file.parsed.people).length * 8 / 60))} min)</button>
+                    <button type="button" onClick={() => readBig(false)} data-testid="ai-txt-plain" className="rounded-full border px-5 py-2.5 text-sm hover:border-urbanex-gold">Add without AI (instant)</button>
+                  </div>
+                  <p className="text-[11px] text-gray-400">The AI adds budget, BHK, area and follow-up dates. Without it, each person is added with the words from the file. You check the first {SHOWN}, then save.</p>
+                </div>
+              )}
+              {prog && (
+                <div className="rounded-xl border bg-white p-4 space-y-2" data-testid="ai-txt-progress">
+                  <div className="text-sm">Reading part {Math.min(prog.done + 1, prog.total)} of {prog.total}…</div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-urbanex-gold transition-all" style={{ width: `${(prog.done / prog.total) * 100}%` }}/></div>
+                  <button type="button" onClick={() => { stop.current = true; }} className="text-xs underline text-gray-600">Stop and review what is read so far</button>
+                </div>
+              )}
             </div>
           )}
           {tab === "notes" && (
@@ -196,7 +268,7 @@ export default function AiAddSheet({ open, onClose, onDone }) {
               )}
             </div>
           )}
-          {busy && <div className="mt-4 text-sm text-gray-500 flex items-center gap-2"><Sparkles className="w-4 h-4 text-urbanex-gold animate-pulse"/> Reading…</div>}
+          {busy && !prog && <div className="mt-4 text-sm text-gray-500 flex items-center gap-2"><Sparkles className="w-4 h-4 text-urbanex-gold animate-pulse"/> Reading…</div>}
           {drafts && <Drafts drafts={drafts} setDrafts={setDrafts} source={source} onSaved={(d) => { setDrafts(null); setText(""); onDone?.(d); onClose(); }}/>}
         </div>
       </SheetContent>
