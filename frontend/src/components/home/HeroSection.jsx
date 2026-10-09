@@ -33,7 +33,7 @@ function useDepthPointer(ref) {
     const tilt = (e) => { if (e.gamma != null && e.beta != null) set(e.gamma / 25, (e.beta - 50) / 25); };
     node.addEventListener("pointermove", move, { passive: true });
     node.addEventListener("pointerleave", leave);
-    const gyro = typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission !== "function";
+    const gyro = !isPhone() && typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission !== "function";
     if (gyro) window.addEventListener("deviceorientation", tilt, { passive: true });
     return () => {
       node.removeEventListener("pointermove", move); node.removeEventListener("pointerleave", leave);
@@ -44,6 +44,8 @@ function useDepthPointer(ref) {
 }
 
 // Data Saver or reduced motion: keep the poster photo only (and a normal-height hero)
+export const isPhone = () => { try { return window.matchMedia("(max-width: 767px)").matches; } catch { return false; } };
+
 export const wantVideo = () => {
   try { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !navigator.connection?.saveData; } catch { return true; }
 };
@@ -52,6 +54,7 @@ export default function HeroSection() {
   const ref = useRef(null);
   const videoRef = useRef(null);
   const [video] = useState(wantVideo);
+  const [phone] = useState(isPhone);   // phones get a small portrait film cut with a frame every few steps, so seeking is quick
   const [ready, setReady] = useState(false);
   const [stats, setStats] = useState({ properties: 0, videos: 0, zones: 0 });
   const target = useRef(0);       // where the playhead should be (seconds), set from scroll
@@ -71,9 +74,10 @@ export default function HeroSection() {
     loop.current = 0;
     const v = videoRef.current;
     if (!v || !v.duration) return;
+    if (v.seeking) { loop.current = requestAnimationFrame(chase); return; }   // a seek is still decoding: queuing more only stutters
     const diff = target.current - v.currentTime;
-    if (Math.abs(diff) > 0.015) {
-      try { v.currentTime = v.currentTime + diff * 0.28; } catch { /* seek not allowed yet */ }
+    if (Math.abs(diff) > 0.02) {
+      try { v.currentTime = v.currentTime + diff * (phone ? 0.5 : 0.28); } catch { /* seek not allowed yet */ }
       loop.current = requestAnimationFrame(chase);
     }
   };
@@ -128,8 +132,9 @@ export default function HeroSection() {
           {video && (
             <video ref={videoRef} muted playsInline preload="none" poster={HERO_IMG} disablePictureInPicture data-testid="hero-video"
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`}>
-              <source src="/videos/hero-scroll.mp4" type="video/mp4"/>
-              <source src="/videos/hero-scroll.webm" type="video/webm"/>
+              {phone
+                ? <source src="/videos/hero-scroll-m.mp4" type="video/mp4"/>
+                : <><source src="/videos/hero-scroll.mp4" type="video/mp4"/><source src="/videos/hero-scroll.webm" type="video/webm"/></>}
             </video>
           )}
         </div>
@@ -156,32 +161,32 @@ export default function HeroSection() {
         </motion.div>
 
         {/* Layer 4: the words, with a slight 3D lean toward the pointer */}
-        <motion.div style={{ opacity: contentOpacity, y: contentY }} className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col justify-end pb-24 pt-32">
+        <motion.div style={{ opacity: contentOpacity, y: contentY }} className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col justify-end pb-20 sm:pb-24 pt-28 sm:pt-32">
           <div className="hero-layer" style={{ transform: "perspective(1200px) rotateY(calc(var(--mx, 0) * 2.2deg)) rotateX(calc(var(--my, 0) * -1.6deg))" }}>
-            <div className="text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-6 flex items-center gap-3">
+            <div className="text-[11px] sm:text-xs tracking-[0.32em] uppercase text-urbanex-gold mb-3 sm:mb-6 flex items-center gap-3">
               <span className="w-10 h-px bg-urbanex-gold"/> Burdwan · Est. 2022
             </div>
-            <h1 className="font-display text-5xl md:text-7xl lg:text-[92px] leading-[0.95] text-urbanex-ivory tracking-tight max-w-4xl xl:max-w-3xl 2xl:max-w-4xl" style={{ perspective: 800 }}>
+            <h1 className="font-display text-[clamp(1.9rem,min(9.5vw,5.8svh),3rem)] sm:text-5xl md:text-7xl lg:text-[92px] leading-[0.98] sm:leading-[0.95] text-urbanex-ivory tracking-tight max-w-4xl xl:max-w-3xl 2xl:max-w-4xl" style={{ perspective: 800 }}>
               {HEADLINE.map((w, i) => (
                 <span key={i} className="word mr-[0.22em]" style={{ "--i": i }}>
                   {i === 3 ? <em className="italic font-normal text-gold-gradient">{w}</em> : w}
                 </span>
               ))}
             </h1>
-            <p className="mt-6 max-w-xl text-urbanex-ivory/85 text-lg leading-relaxed">
+            <p className="mt-3 sm:mt-6 max-w-xl text-urbanex-ivory/85 text-[15px] sm:text-lg leading-relaxed line-clamp-3 sm:line-clamp-none">
               Boutique real estate advisory in Burdwan. Hand-picked homes, every video tour on our channel, and one founder who picks up the phone.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-4">
+            <div className="mt-5 sm:mt-10 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
               <Magnetic>
                 <Link to="/properties" data-testid={HOME.ctaExplore}
-                  className="btn-shine group inline-flex items-center gap-2 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-7 py-4 rounded-full text-sm tracking-wide font-medium transition-colors">
+                  className="btn-shine group inline-flex items-center gap-2 bg-urbanex-gold hover:bg-urbanex-goldHover text-urbanex-navy px-6 sm:px-7 py-3 sm:py-4 rounded-full text-sm tracking-wide font-medium transition-colors">
                   Explore properties
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1"/>
                 </Link>
               </Magnetic>
               <Magnetic>
                 <Link to="/properties" data-testid="hero-videos"
-                  className="group inline-flex items-center gap-2 glass hover:border-urbanex-gold text-urbanex-ivory px-6 py-4 rounded-full text-sm tracking-wide transition-colors">
+                  className="group inline-flex items-center gap-2 glass hover:border-urbanex-gold text-urbanex-ivory px-5 sm:px-6 py-3 sm:py-4 rounded-full text-sm tracking-wide transition-colors">
                   <PlayCircle className="w-4 h-4 text-urbanex-gold"/> Watch video tours
                 </Link>
               </Magnetic>

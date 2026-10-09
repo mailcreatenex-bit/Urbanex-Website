@@ -44,6 +44,12 @@ export default function Navbar() {
   }, []);
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => { document.body.style.overflow = open ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [open]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const esc = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [open]);
 
   const links = LINKS.map(l => ({ ...l, label: t(l.key) }));
   const active = links.find(l => (l.to === "/" ? pathname === "/" : pathname.startsWith(l.to)))?.to;
@@ -106,6 +112,10 @@ export default function Navbar() {
           <motion.div key="menu" initial={{ clipPath: "circle(0% at 92% 4%)" }} animate={{ clipPath: "circle(150% at 92% 4%)" }} exit={{ clipPath: "circle(0% at 92% 4%)" }} transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
             className="md:hidden fixed inset-0 z-[45] sec-dark overflow-y-auto">
             <div className="aurora"/>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close menu" data-testid="menu-close"
+              className="fixed top-4 right-4 z-[50] grid place-items-center h-12 w-12 rounded-full border border-urbanex-gold/60 bg-urbanex-navy/60 text-urbanex-ivory backdrop-blur hover:bg-urbanex-gold hover:text-urbanex-navy transition-colors">
+              <X className="w-6 h-6"/>
+            </button>
             <div className="relative px-7 pt-28 pb-10 min-h-full flex flex-col">
               <nav className="flex flex-col" aria-label="Menu">
                 {links.map((l, i) => (
