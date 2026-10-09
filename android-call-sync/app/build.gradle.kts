@@ -15,6 +15,14 @@ android {
         versionName = "1.0"
     }
 
+    // sign with the old (v1) style as well as v2/v3, so every phone's installer can read the file
+    signingConfigs {
+        getByName("debug") {
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
