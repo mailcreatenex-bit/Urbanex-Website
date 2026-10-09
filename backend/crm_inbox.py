@@ -17,7 +17,7 @@ from email.header import decode_header, make_header
 from typing import List, Literal, Optional
 
 import httpx
-from fastapi import HTTPException, Query, Request, Response
+from fastapi import File, Form, HTTPException, Query, Request, Response, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 import server as S
@@ -398,6 +398,42 @@ async def import_contacts(payload: ContactsIn, request: Request):
         made += res["created"]
         merged += not res["created"]
     return {"created": made, "merged": merged, "skipped": skipped}
+
+
+# ---------------------------------------------------------------- recordings sent straight from your own phone (the Urbanex Call Sync app)
+@S.api.post("/calls/device-upload", status_code=202)
+async def call_device_upload(request: Request, file: UploadFile = File(...), phone: str = Form(default=""), direction: str = Form(default=""), started_at: str = Form(default="")):
+    """Your phone's call-recorder saves each call to a folder; the Call Sync app posts every new file here. Header: X-Webhook-Key (your CALL_WEBHOOK_SECRET).
+    The answer comes back at once; the AI listens in the background. Sending the same file twice is harmless."""
+    S.rate_limit(request, "call_device", 300, 3600)
+    check_key(request, S.CALL_WEBHOOK_SECRET)
+    if not S.gemini_enabled():
+        raise HTTPException(503, "The AI assistant is not set up")
+    data = await file.read(S.MAX_AUDIO_BYTES_AI + 1)
+    if len(data) > S.MAX_AUDIO_BYTES_AI:
+        raise HTTPException(413, "The recording is too large (14 MB at most)")
+    if not S.sniff_audio(data):
+        raise HTTPException(415, "Unsupported audio format (MP3, M4A, WAV, OGG, FLAC or AAC; AMR is not supported)")
+    given = None
+    if phone.strip():
+        try:
+            given = S.clean_phone(phone)
+        except ValueError:
+            given = None
+    info = S.parse_recording_name(file.filename or "")
+    key = "device:" + hashlib.sha256(data).hexdigest()
+    if await S.db.call_logs.find_one({"source_key": key, "status": {"$in": ["done", "ignored"]}}, {"_id": 1}):
+        return {"accepted": True, "duplicate": True}
+    meta = {"source_key": key, "source": "phone_app", "name": (file.filename or "recording")[:120], "phone": given or info.get("phone"), "contact_name": info.get("name"),
+            "direction": direction if direction in ("incoming", "outgoing") else info.get("direction"), "started_at": started_at[:40] or None}
+
+    async def work():
+        try:
+            await S.process_call(data, meta)
+        except Exception as e:
+            logging.warning(f"Phone-app recording could not be processed: {type(e).__name__}: {S.redact(str(e))}")
+    S.spawn(work())
+    return {"accepted": True, "duplicate": False}
 
 
 # ---------------------------------------------------------------- the Inbox screen

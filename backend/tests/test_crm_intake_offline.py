@@ -1,5 +1,6 @@
 """Lead intake: one door for every channel, auto-merge, spam filter, language, portal e-mails, IMAP, Meta, WhatsApp, missed calls, contacts, cards, speed coach.
     pytest backend/tests/test_crm_intake_offline.py -n 0"""
+import asyncio
 import hashlib
 import hmac
 import json
@@ -259,3 +260,26 @@ def test_speed_coach_alerts_after_five_minutes(c):
     old, fresh = c.portal.call(go)
     titles = [n["title"] for n in c.get("/api/admin/notifications", headers=ADMIN).json()["items"]]
     assert sum("Quick Query has been waiting" in t for t in titles) == 1 and not any("Just Now has been waiting" in t for t in titles)
+
+
+def test_phone_app_upload_needs_the_key_and_a_real_recording(monkeypatch):
+    """The Call Sync app posts each new recording: key required, formats checked, same file twice is harmless."""
+    monkeypatch.setattr(server, "CALL_WEBHOOK_SECRET", "phone-secret")
+    monkeypatch.setattr(server, "gemini_enabled", lambda: True)
+    seen = []
+
+    async def fake_process(audio, meta):
+        seen.append(meta)
+        return {"id": "x"}
+    monkeypatch.setattr(server, "process_call", fake_process)
+    mp3 = b"ID3" + b"\x00" * 300
+    with TestClient(server.app) as c:
+        files = {"file": ("Call_9831012345_incoming.mp3", mp3, "audio/mpeg")}
+        assert c.post("/api/calls/device-upload", files=files).status_code == 401
+        assert c.post("/api/calls/device-upload", files=files, headers={"X-Webhook-Key": "wrong"}).status_code == 401
+        bad = c.post("/api/calls/device-upload", files={"file": ("a.amr", b"#!AMR\n" + b"1" * 50, "audio/amr")}, headers={"X-Webhook-Key": "phone-secret"})
+        assert bad.status_code == 415
+        ok = c.post("/api/calls/device-upload", files=files, data={"direction": "incoming"}, headers={"X-Webhook-Key": "phone-secret"})
+        assert ok.status_code == 202 and ok.json()["accepted"] is True
+        c.portal.call(asyncio.sleep, 0.3)
+        assert seen and seen[0]["phone"] == "+919831012345" and seen[0]["source"] == "phone_app"

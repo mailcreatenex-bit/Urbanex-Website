@@ -1,0 +1,56 @@
+# Urbanex Call Sync: your own phone app for call recordings
+
+A small Android app for **your phone only**. It does not record calls itself (Android does not let ordinary apps do that well).
+Your phone's own call recorder saves each call to a folder; this app watches that folder and sends every new recording to the
+Urbanex CRM, where the AI listens to it, adds the customer and what they want, and sets a follow-up. No Google Drive is needed.
+
+```
+Phone's call recorder  ->  recordings folder  ->  Urbanex Call Sync  ->  your server  ->  AI  ->  CRM > Calls
+```
+
+## 1. Turn on your phone's recorder
+Use the recorder that came with the phone. Names differ:
+* **Google Phone app:** Settings > Call recording > choose "Always record" for the numbers you want (it plays a notice to the caller).
+* **Samsung:** Phone > Settings > Record calls > Auto record calls.
+* **Xiaomi, Realme, Oppo, Vivo:** Phone > Settings > Call recording > Automatically record.
+Phones sold without a recorder need a cloud business number instead (see `CALL_RECORDING.md`). Choose **m4a or mp3** format if the
+recorder offers a choice. **AMR files are not supported** and are skipped.
+
+Tell callers that calls may be recorded.
+
+## 2. Make the key
+The app proves it is yours with a long secret. Make one (for example 40 random letters and numbers, from a password manager) and set it
+on the server as `CALL_WEBHOOK_SECRET` (Render > urbanex-api > Environment). Keep it private. The same secret is used by phone-system
+webhooks.
+
+## 3. Get the app (no Android Studio needed)
+1. On GitHub open the repository > **Actions** > **Build the Call Sync app** > **Run workflow**.
+2. When the run turns green, open it and download **urbanex-call-sync-apk**. Unzip it to get `app-debug.apk`.
+3. Send that file to your phone (WhatsApp to yourself, a cable, or Drive) and open it. Android asks to allow installing from
+   that source: allow it. If Play Protect warns that the app is unknown, choose "Install anyway". It is your own build.
+
+## 4. Set it up (once)
+1. **Server address:** `https://urbanex-realty.netlify.app`.
+2. **Key:** the secret from step 2.
+3. **Choose the recordings folder:** pick the folder where your recorder saves files (often `Recordings`, `Recordings/Call`,
+   `MIUI/sound_recorder/call_rec`, `Music/Recordings/Call`). Android asks you to allow access to that one folder only.
+4. **Save and start.** Allow the contacts permission (it is only used to find a customer's number when the file is named after them).
+5. Press **Allow it to work in the background** and set the app to "Unrestricted"/"Don't optimise". Phones that stop background apps
+   (Xiaomi, Oppo, Vivo, Realme) also need "Autostart" on for the app.
+
+New recordings are then sent about every 15 minutes, and the **Send new recordings now** button does it at once. Only recordings made
+after you press "Save and start" are sent.
+
+## What to expect
+* The first request after a quiet spell can take a minute (the free server wakes up). The app waits.
+* A recording appears in the CRM **Calls** tab a minute or two after it is sent. Calls the AI judges personal are not kept.
+* The same file is never processed twice.
+* Files over 14 MB (about 15 minutes) are skipped.
+* If the file name has no number, the app looks the name up in your contacts; otherwise the AI tries to pick the number from the call.
+
+## If something does not work
+* **"The server refused the key"**: the key in the app differs from `CALL_WEBHOOK_SECRET` on the server.
+* **Nothing is sent**: open the recordings folder in a file manager and check that files really appear there after a call. Some phones
+  record only to a hidden location; in that case use a cloud number.
+* **Only your voice is on the recording**: that is a limit of the phone's recorder, not of this app. Try the Google Phone app's recorder.
+* **Stops after a few days**: the phone is stopping the app in the background; check the battery settings in step 4.5.

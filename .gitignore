@@ -96,3 +96,9 @@ uploads/
 frontend/node_modules/.cache/default-development/8.pack
 frontend/node_modules/.cache/default-development/6.pack
 frontend/node_modules/.cache/default-development/11.pack
+
+# Android app build output
+android-call-sync/.gradle/
+android-call-sync/build/
+android-call-sync/app/build/
+android-call-sync/local.properties
