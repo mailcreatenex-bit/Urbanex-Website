@@ -15,6 +15,7 @@ import android.view.View
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private var loadedCrm = false
     private var loadedSite = false
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var lastCheck = 0L
 
     private fun base() = Prefs.url(this).trimEnd('/')
 
@@ -147,6 +149,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshRecorder()
+        checkSession()
     }
 
     // ------------------------------------------------------------------ the two website tabs
@@ -161,17 +164,28 @@ class MainActivity : AppCompatActivity() {
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.settings.allowFileAccess = false
+        web.settings.allowContentAccess = false
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false)
         refresh.setColorSchemeResources(R.color.gold)
-        refresh.setOnRefreshListener { web.reload() }
+        refresh.setOnRefreshListener {
+            val failed = web.tag as? String           // the last page could not load: try that address again
+            if (failed != null) {
+                web.tag = null
+                web.loadUrl(failed)
+            } else {
+                web.reload()
+            }
+        }
         refresh.setOnChildScrollUpCallback { _, _ -> web.scrollY > 0 }
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
                 if (u.scheme == "https" && u.host == Uri.parse(base()).host) return false
+                // only ordinary links leave the app (WhatsApp, the dialer, maps, mail, other sites); anything else, such as intent: links, is refused
+                if (u.scheme !in OPEN_OUTSIDE) return true
                 try {
-                    startActivity(Intent(Intent.ACTION_VIEW, u)) // WhatsApp, the dialer, maps and other sites open in their own app
+                    startActivity(Intent(Intent.ACTION_VIEW, u))
                 } catch (e: ActivityNotFoundException) {
                     Toast.makeText(this@MainActivity, "Nothing on this phone can open that link.", Toast.LENGTH_SHORT).show()
                 }
@@ -184,6 +198,18 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 refresh.isRefreshing = false
+            }
+
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                if (!request.isForMainFrame) return
+                view.tag = request.url.toString()
+                refresh.isRefreshing = false
+                view.loadData(
+                    "<html><body style='font-family:sans-serif;text-align:center;padding:64px 24px;color:#0A1225;background:#FDFBF7'>" +
+                        "<h2>Cannot reach the server</h2><p>Check your internet, then pull down to try again.<br>" +
+                        "The free server can take up to a minute to wake up.</p></body></html>",
+                    "text/html", "utf-8",
+                )
             }
         }
         web.webChromeClient = object : WebChromeClient() {
@@ -384,7 +410,28 @@ class MainActivity : AppCompatActivity() {
         tvStatus.postDelayed({ refreshRecorder() }, 15000)
     }
 
+    /** Signed in for 30 days; if the server says the session is over (or the account lost admin rights), go back to the sign-in screen. */
+    private fun checkSession() {
+        if (!Prefs.loggedIn(this) || System.currentTimeMillis() - lastCheck < 10 * 60_000L) return
+        lastCheck = System.currentTimeMillis()
+        Thread {
+            val state = AppLogin.sessionState(base())          // true = fine, false = signed out, null = could not tell (offline)
+            if (state == false) {
+                runOnUiThread {
+                    Prefs.setLoggedIn(this, false)
+                    loadedCrm = false
+                    loadedSite = false
+                    webCrm.loadUrl("about:blank")
+                    webSite.loadUrl("about:blank")
+                    show(tab)
+                    Toast.makeText(this, "Your sign-in ended. Please sign in again.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
+    }
+
     companion object {
+        private val OPEN_OUTSIDE = setOf("http", "https", "tel", "mailto", "sms", "smsto", "geo", "whatsapp")
         private const val REQ_FOLDER = 41
         private const val REQ_CONTACTS = 42
         private const val REQ_SIM = 43

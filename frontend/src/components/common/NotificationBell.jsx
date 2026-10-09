@@ -50,7 +50,7 @@ export default function NotificationBell({ mode = "user", dark = false }) {
         {data.unread > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center" data-testid="notif-count">{data.unread}</span>}
       </button>
       {open && (
-        <div className="fixed inset-x-3 top-[4.5rem] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 max-h-96 overflow-y-auto bg-white text-urbanex-navy rounded-xl shadow-2xl border z-50">
+        <div className={`fixed inset-x-3 top-[4.5rem] sm:absolute sm:inset-x-auto sm:top-auto ${dark ? "sm:left-0" : "sm:right-0"} sm:mt-2 sm:w-80 max-h-96 overflow-y-auto bg-white text-urbanex-navy rounded-xl shadow-2xl border z-50`}>
           {data.items.length === 0 && <div className="p-6 text-sm text-gray-400 text-center">No notifications yet</div>}
           {data.items.map(n => (
             <Link key={n.id} to={n.link || "#"} onClick={() => setOpen(false)} className={`block px-4 py-3 border-b last:border-0 hover:bg-gray-50 ${n.read ? "" : "bg-urbanex-gold/10"}`}>

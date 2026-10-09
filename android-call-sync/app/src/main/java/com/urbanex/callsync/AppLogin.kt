@@ -35,6 +35,28 @@ object AppLogin {
         }
     }
 
+    /** Asks the server whether the in-app sign-in is still good: true yes, false no (ended or not an admin), null could not tell. */
+    fun sessionState(base: String): Boolean? {
+        val cookie = CookieManager.getInstance().getCookie(base) ?: return false
+        return try {
+            val req = Request.Builder().url("$base/api/auth/me").header("Cookie", cookie).get().build()
+            http.newCall(req).execute().use { r ->
+                when {
+                    r.code == 401 -> false
+                    r.code != 200 -> null
+                    else -> {
+                        val me = JSONObject(r.body?.string() ?: "{}")
+                        me.optBoolean("is_admin", false) || me.optBoolean("is_staff", false)
+                    }
+                }
+            }
+        } catch (e: IOException) {
+            null
+        } catch (e: org.json.JSONException) {
+            null
+        }
+    }
+
     fun logout(base: String) {
         val cm = CookieManager.getInstance()
         val cookie = cm.getCookie(base) ?: ""

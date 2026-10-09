@@ -27,9 +27,15 @@ object Prefs {
         sp(c).edit().putBoolean("loggedIn", v).apply()
     }
 
+    /** "urbanex.example.com/" and " https://urbanex.example.com " both become "https://urbanex.example.com". */
+    fun normalizeUrl(raw: String): String {
+        val t = raw.trim().trimEnd('/')
+        return if (t.isEmpty() || t.startsWith("http://") || t.startsWith("https://")) t else "https://$t"
+    }
+
     fun save(c: Context, url: String, key: String, folder: String, sinceMs: Long) {
         sp(c).edit()
-            .putString("url", url.trim().trimEnd('/'))
+            .putString("url", normalizeUrl(url))
             .putString("key", key.trim())
             .putString("folder", folder)
             .putLong("since", sinceMs)

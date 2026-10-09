@@ -92,9 +92,10 @@ object Sync {
             }
             var phone: String? = null
             var direction: String? = null
+            var startedAt = f.lastModified()
             if (calls != null) {
-                // only the business SIM: find the call this recording belongs to, and check which SIM it used
-                val e = calls.firstOrNull { it.endsNear(f.lastModified()) }
+                // only the business SIM: find the call this recording belongs to (the one that ended closest to it), and check which SIM it used
+                val e = calls.filter { it.endsNear(f.lastModified()) }.minByOrNull { abs(it.date + it.seconds * 1000L - f.lastModified()) }
                 if (e == null) {
                     if (now - f.lastModified() < LOG_WAIT_MS) {
                         waiting++
@@ -110,13 +111,14 @@ object Sync {
                     continue
                 }
                 phone = e.number.ifBlank { null }
+                startedAt = e.date
                 direction = when (e.type) {
                     CallLog.Calls.INCOMING_TYPE -> "incoming"
                     CallLog.Calls.OUTGOING_TYPE -> "outgoing"
                     else -> null
                 }
             }
-            when (upload(c, url, key, f, phone, direction)) {
+            when (upload(c, url, key, f, phone, direction, startedAt)) {
                 Outcome.SENT -> {
                     Prefs.markDone(c, id)
                     Prefs.addSent(c)
@@ -186,7 +188,7 @@ object Sync {
 
     private enum class Outcome { SENT, SKIP, WRONG_KEY, RETRY }
 
-    private fun upload(c: Context, base: String, key: String, f: DocumentFile, phone: String?, direction: String?): Outcome {
+    private fun upload(c: Context, base: String, key: String, f: DocumentFile, phone: String?, direction: String?, startedAt: Long): Outcome {
         val name = f.name ?: "recording.m4a"
         val ext = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
         val type = (AUDIO[ext] ?: "application/octet-stream").toMediaType()
@@ -199,7 +201,7 @@ object Sync {
         }
         val form = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("file", name, body)
-            .addFormDataPart("started_at", Instant.ofEpochMilli(f.lastModified()).toString())
+            .addFormDataPart("started_at", Instant.ofEpochMilli(startedAt).toString())
         // Many phones name the file after the contact, not the number: look the number up in your contacts
         val compact = name.replace(Regex("[\\s\\-+()]"), "")
         if (phone != null) {
