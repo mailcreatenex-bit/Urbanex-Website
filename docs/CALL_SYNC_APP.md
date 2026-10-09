@@ -10,13 +10,13 @@ Phone's call recorder  ->  recordings folder  ->  Urbanex Call Sync  ->  your se
 
 ## What is in the app
 Three tabs at the bottom:
-* **CRM**: your real CRM (leads, inbox, plan, insights...) inside the app. Pull down to refresh.
+* **Leads**: your real CRM (leads, inbox, plan, insights...) inside the app. Pull down to refresh.
 * **Website**: the website admin (properties, videos, owner listings, land reports, team...), also inside the app.
-* **Recorder**: the call-recording settings below.
+* **Calls**: the call-recording setup (3 easy steps), below.
 
 **Signing in:** press "Sign in with Google" in the app. It opens your phone's browser (Google does not allow sign-in inside an app), you sign in as
 an admin, and it brings you straight back to the app with the CRM open. No password or key is stored on the phone. The sign-in lasts 30 days.
-"Sign out of the CRM" is on the Recorder tab.
+"Sign out of the CRM" is on the Calls tab.
 
 ## 1. Turn on your phone's recorder
 Use the recorder that came with the phone. Names differ:
@@ -37,7 +37,7 @@ on the server as `CALL_WEBHOOK_SECRET` (Render > urbanex-api > Environment). Kee
 webhooks.
 
 ## 3. Get the app (no Android Studio needed)
-1. On your phone open `https://github.com/mailcreatenex-bit/Urbanex-Website/releases/tag/latest-apk` (no GitHub login needed) and download **Urbanex-Recorder.apk**.
+1. On your phone open `https://github.com/mailcreatenex-bit/Urbanex-Website/releases/tag/latest-apk` (no GitHub login needed) and download **UrbanexCRM.apk**.
 2. Open the downloaded file. Android asks to allow installing from that source (your browser or file manager): allow it. If Play Protect warns that
    the app is unknown, choose "Install anyway". It is your own build.
 
@@ -49,7 +49,7 @@ webhooks.
 4. **Choose the business SIM** (needs the call-log and phone permissions). Only calls on that SIM are sent, so personal calls on your other SIM never leave the
    phone. The app finds each recording's call in the phone's call log, and also takes the exact number and direction from it. If it cannot match
    calls on your phone model, choose "All calls on this phone": the AI still ignores calls that are not about property.
-   On Android 13 or newer, if the call-log permission is greyed out: Settings > Apps > Urbanex Recorder > the three dots at the top right > **Allow restricted settings**, then try again.
+   On Android 13 or newer, if the call-log permission is greyed out: Settings > Apps > UrbanexCRM > the three dots at the top right > **Allow restricted settings**, then try again.
 5. **Save and start.** Allow the contacts permission (it is only used to find a customer's number when the file is named after them).
 6. Press **Allow it to work in the background** and set the app to "Unrestricted"/"Don't optimise". Phones that stop background apps
    (Xiaomi, Oppo, Vivo, Realme) also need "Autostart" on for the app.

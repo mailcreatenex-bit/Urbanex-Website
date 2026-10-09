@@ -1,4 +1,4 @@
-"""Signing in from the Urbanex Recorder phone app.
+"""Signing in from the UrbanexCRM phone app.
 
 Google refuses to sign people in inside an app's embedded browser, so the app opens the website in the phone's own browser instead. After
 Google sign-in, the website asks for a one-time token (valid for two minutes) and hands it to the app through a link that opens the app.

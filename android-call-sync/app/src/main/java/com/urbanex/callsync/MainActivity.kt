@@ -22,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -36,7 +37,7 @@ import com.google.android.material.textfield.TextInputEditText
 import java.util.concurrent.TimeUnit
 
 /**
- * Three tabs: the CRM and the website admin (the real website, inside the app) and the Recorder settings.
+ * UrbanexCRM. Three tabs: Leads (the CRM) and Website (the admin), both the real website inside the app, and Calls (the recorder setup).
  * Sign-in happens in the phone's browser (Google does not allow it inside an app), then comes back through a link.
  */
 class MainActivity : AppCompatActivity() {
@@ -53,6 +54,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvSim: TextView
     private lateinit var tvSent: TextView
     private lateinit var tvStatus: TextView
+    private lateinit var tvState: TextView
+    private lateinit var tvKeyState: TextView
+    private lateinit var tvFolderState: TextView
+    private lateinit var tvSimState: TextView
+    private lateinit var advancedBox: View
 
     private var folder = ""
     private var tab = R.id.tab_crm
@@ -78,6 +84,11 @@ class MainActivity : AppCompatActivity() {
         tvSim = findViewById(R.id.tvSim)
         tvSent = findViewById(R.id.tvSent)
         tvStatus = findViewById(R.id.tvStatus)
+        tvState = findViewById(R.id.tvState)
+        tvKeyState = findViewById(R.id.tvKeyState)
+        tvFolderState = findViewById(R.id.tvFolderState)
+        tvSimState = findViewById(R.id.tvSimState)
+        advancedBox = findViewById(R.id.advancedBox)
 
         setupWeb(webCrm, refreshCrm)
         setupWeb(webSite, refreshSite)
@@ -85,9 +96,13 @@ class MainActivity : AppCompatActivity() {
         folder = Prefs.folder(this)
         etUrl.setText(Prefs.url(this))
         etKey.setText(Prefs.key(this))
-        tvFolder.text = if (folder.isEmpty()) "Not chosen" else Uri.decode(folder)
+        tvFolder.text = folderName()
         tvSim.text = Prefs.simLabel(this)
+        findViewById<View>(R.id.btnAdvanced).setOnClickListener {
+            advancedBox.visibility = if (advancedBox.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
 
+        etKey.doAfterTextChanged { refreshRecorder() }
         findViewById<MaterialButton>(R.id.btnLogin).setOnClickListener { startLogin() }
         findViewById<MaterialButton>(R.id.btnFolder).setOnClickListener {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQ_FOLDER)
@@ -262,6 +277,25 @@ class MainActivity : AppCompatActivity() {
     private fun refreshRecorder() {
         tvSent.text = Prefs.sentCount(this).toString()
         tvStatus.text = Prefs.status(this)
+        val keyOk = !etKey.text.isNullOrBlank()
+        val folderOk = folder.isNotEmpty()
+        mark(tvKeyState, keyOk, "To do")
+        mark(tvFolderState, folderOk, "To do")
+        mark(tvSimState, Prefs.simSub(this) != -1, "Optional")
+        val running = Prefs.folder(this).isNotEmpty() && Prefs.key(this).isNotEmpty()
+        tvState.text = if (running) "ACTIVE" else if (keyOk && folderOk) "READY: TAP START" else "SET UP NEEDED"
+    }
+
+    private fun mark(v: TextView, done: Boolean, todo: String) {
+        v.text = if (done) "✓ Done" else todo
+        v.setTextColor(getColor(if (done) R.color.done else R.color.gold))
+    }
+
+    /** The last part of the folder address, e.g. "Call" instead of a long content:// path. */
+    private fun folderName(): String {
+        if (folder.isEmpty()) return "No folder chosen"
+        val d = Uri.decode(folder).trimEnd('/')
+        return d.substringAfterLast(':').substringAfterLast('/').ifEmpty { d }
     }
 
     @Deprecated("Deprecated in Java")
@@ -272,7 +306,8 @@ class MainActivity : AppCompatActivity() {
                 val uri = data?.data ?: return
                 contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 folder = uri.toString()
-                tvFolder.text = Uri.decode(folder)
+                tvFolder.text = folderName()
+                refreshRecorder()
             }
             REQ_FILE -> {
                 fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
@@ -304,6 +339,7 @@ class MainActivity : AppCompatActivity() {
                 Prefs.setSim(this, s.subscriptionId, s.iccId ?: "", labels[which])
             }
             tvSim.text = labels[which]
+            refreshRecorder()
         }.show()
     }
 
@@ -315,7 +351,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveAndStart() {
         if (etUrl.text.isNullOrBlank() || etKey.text.isNullOrBlank() || folder.isEmpty()) {
-            Toast.makeText(this, "Fill in the address and the key, and choose the folder.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Please add your access key (step 1) and choose the folder (step 2).", Toast.LENGTH_LONG).show()
             return
         }
         // only recordings made from now on are sent, unless this folder was already set up before
@@ -331,7 +367,7 @@ class MainActivity : AppCompatActivity() {
             ExistingPeriodicWorkPolicy.UPDATE,
             PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(net).build(),
         )
-        Prefs.setStatus(this, "Started. New recordings are sent about every 15 minutes.")
+        Prefs.setStatus(this, "On. New calls are sent about every 15 minutes.")
         refreshRecorder()
         runNow()
     }
@@ -343,7 +379,7 @@ class MainActivity : AppCompatActivity() {
             ExistingWorkPolicy.REPLACE,
             OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(net).build(),
         )
-        Toast.makeText(this, "Checking for new recordings...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Looking for new calls...", Toast.LENGTH_SHORT).show()
         tvStatus.postDelayed({ refreshRecorder() }, 4000)
         tvStatus.postDelayed({ refreshRecorder() }, 15000)
     }

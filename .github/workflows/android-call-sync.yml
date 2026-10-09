@@ -1,4 +1,4 @@
-name: Build the Urbanex Recorder app
+name: Build the UrbanexCRM app
 
 # Builds the phone app on GitHub's free servers: no Android Studio needed.
 # On the main branch it also publishes the finished file as a public download:
@@ -29,15 +29,15 @@ jobs:
         working-directory: android-call-sync
         run: gradle assembleDebug --no-daemon --stacktrace
       - name: Name the file
-        run: cp android-call-sync/app/build/outputs/apk/debug/app-debug.apk Urbanex-Recorder.apk
+        run: cp android-call-sync/app/build/outputs/apk/debug/app-debug.apk UrbanexCRM.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: urbanex-recorder-apk
-          path: Urbanex-Recorder.apk
+          name: urbanexcrm-apk
+          path: UrbanexCRM.apk
       - name: Publish a public download (main branch only)
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest-apk --yes --cleanup-tag || true
-          gh release create latest-apk Urbanex-Recorder.apk --target "${{ github.sha }}" --title "Urbanex Recorder (latest build)" --notes "Install this file on your Android phone. Steps: docs/CALL_SYNC_APP.md"
+          gh release create latest-apk UrbanexCRM.apk --target "${{ github.sha }}" --title "UrbanexCRM (latest build)" --notes "Install this file on your Android phone. Steps: docs/CALL_SYNC_APP.md"

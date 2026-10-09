@@ -33,6 +33,7 @@
                 android:layout_height="match_parent" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+        <!-- shown on the Leads and Website tabs until you sign in -->
         <LinearLayout
             android:id="@+id/loginPanel"
             android:layout_width="match_parent"
@@ -43,44 +44,53 @@
             android:padding="32dp"
             android:visibility="gone">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="URBANEX"
-                android:textColor="@color/gold"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.3" />
+            <ImageView
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:background="@drawable/bg_badge"
+                android:contentDescription="UrbanexCRM"
+                android:src="@drawable/ic_launcher_foreground" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:text="Your CRM and website, in one app"
+                android:layout_marginTop="20dp"
+                android:fontFamily="serif"
+                android:text="Welcome to UrbanexCRM"
                 android:textColor="@color/navy"
-                android:textSize="26sp"
-                android:fontFamily="serif" />
+                android:textSize="26sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="Your leads, your website and your call recordings, all in one place."
+                android:textColor="#99000000"
+                android:textSize="15sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="32dp"
+                android:text="Sign in with Google"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                app:backgroundTint="@color/navy"
+                app:cornerRadius="16dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:gravity="center"
-                android:text="Sign in with the Google account you use as admin. It opens in your browser and brings you straight back here."
-                android:textColor="#99000000"
-                android:textSize="14sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLogin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:text="Sign in with Google"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/navy" />
+                android:text="It opens your browser for a moment and brings you straight back. Use the Google account you use as admin."
+                android:textColor="#80000000"
+                android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- the Calls tab -->
         <ScrollView
             android:id="@+id/recorderPanel"
             android:layout_width="match_parent"
@@ -99,86 +109,115 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:cardBackgroundColor="@color/navy"
-                    app:cardCornerRadius="20dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="20dp">
+                        android:padding="22dp">
 
                         <TextView
+                            android:id="@+id/tvState"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CALL RECORDINGS SENT"
+                            android:text="SET UP NEEDED"
                             android:textColor="@color/gold"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
-                            android:letterSpacing="0.2" />
+                            android:letterSpacing="0.15" />
 
                         <TextView
                             android:id="@+id/tvSent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:fontFamily="serif"
                             android:text="0"
                             android:textColor="@color/ivory"
-                            android:textSize="44sp"
-                            android:fontFamily="serif" />
+                            android:textSize="52sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="calls sent to your CRM"
+                            android:textColor="#B3FDFBF7"
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/tvStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
                             android:text="Not started yet"
-                            android:textColor="#B3FDFBF7"
-                            android:textSize="13sp" />
+                            android:textColor="#80FDFBF7"
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="22dp"
+                    android:text="Set up in 3 easy steps"
+                    android:textColor="@color/navy"
+                    android:textSize="18sp"
+                    android:fontFamily="serif" />
+
+                <!-- step 1 -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="10dp"
                     app:cardBackgroundColor="@color/ivory"
-                    app:cardCornerRadius="20dp"
+                    app:cardCornerRadius="18dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="1.  Your access key"
+                                android:textColor="@color/navy"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvKeyState"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="To do"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Settings"
-                            android:textColor="@color/navy"
-                            android:textSize="20sp"
-                            android:fontFamily="serif" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
-                            android:hint="Server address">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etUrl"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textUri"
-                                android:singleLine="true" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                            android:layout_marginTop="4dp"
+                            android:text="The secret code you set as CALL_WEBHOOK_SECRET on your server. It lets this phone send calls safely."
+                            android:textColor="#99000000"
+                            android:textSize="12sp" />
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
-                            android:hint="Key (CALL_WEBHOOK_SECRET)"
+                            android:hint="Access key"
                             app:endIconMode="password_toggle">
 
                             <com.google.android.material.textfield.TextInputEditText
@@ -190,10 +229,77 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <TextView
+                            android:id="@+id/btnAdvanced"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="Folder where your phone saves call recordings"
+                            android:layout_marginTop="8dp"
+                            android:padding="4dp"
+                            android:text="Change server address"
+                            android:textColor="@color/gold"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/advancedBox"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:hint="Server address"
+                            android:visibility="gone">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etUrl"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- step 2 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/ivory"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="2.  Where calls are saved"
+                                android:textColor="@color/navy"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvFolderState"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="To do"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Turn on automatic call recording in your phone's Phone app, then pick the folder where it keeps the recordings."
                             android:textColor="#99000000"
                             android:textSize="12sp" />
 
@@ -201,8 +307,8 @@
                             android:id="@+id/tvFolder"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Not chosen"
+                            android:layout_marginTop="8dp"
+                            android:text="No folder chosen"
                             android:textColor="@color/navy"
                             android:textSize="14sp" />
 
@@ -211,14 +317,54 @@
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Choose the recordings folder"
+                            android:text="Choose folder"
                             android:textAllCaps="false" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- step 3 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/ivory"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="3.  Which SIM is for business"
+                                android:textColor="@color/navy"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvSimState"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Optional"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
-                            android:text="Business SIM (only its calls are sent)"
+                            android:layout_marginTop="4dp"
+                            android:text="Only calls on this SIM are sent. Your personal calls never leave the phone."
                             android:textColor="#99000000"
                             android:textSize="12sp" />
 
@@ -226,7 +372,7 @@
                             android:id="@+id/tvSim"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="8dp"
                             android:text="All calls on this phone"
                             android:textColor="@color/navy"
                             android:textSize="14sp" />
@@ -236,44 +382,47 @@
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Choose the business SIM"
+                            android:text="Choose SIM"
                             android:textAllCaps="false" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSave"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
-                            android:text="Save and start"
-                            android:textAllCaps="false"
-                            app:backgroundTint="@color/navy" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnNow"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Send new recordings now"
-                            android:textAllCaps="false" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnBattery"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Allow it to work in the background"
-                            android:textAllCaps="false" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLogout"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Sign out of the CRM"
-                            android:textAllCaps="false"
-                            android:textColor="#B3261E" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSave"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginTop="18dp"
+                    android:text="Start sending calls"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    app:backgroundTint="@color/navy"
+                    app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNow"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Send new calls now"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBattery"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Keep it running in the background"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sign out"
+                    android:textAllCaps="false"
+                    android:textColor="#B3261E" />
             </LinearLayout>
         </ScrollView>
     </FrameLayout>

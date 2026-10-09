@@ -4,9 +4,10 @@
     <color name="navy_light">#1A253F</color>
     <color name="gold">#C5A059</color>
     <color name="ivory">#FDFBF7</color>
+    <color name="done">#2E7D32</color>
     <color name="cream">#F4F1EA</color>
 
-    <string name="app_name">Urbanex Recorder</string>
+    <string name="app_name">UrbanexCRM</string>
 
     <style name="Theme.UrbanexRecorder" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/navy</item>
