@@ -58,7 +58,7 @@ class MainActivity : Activity() {
             setPadding(dp(20), dp(28), dp(20), dp(28))
         }
         col.addView(TextView(this).apply {
-            text = "Urbanex Call Sync"
+            text = "Urbanex Recorder"
             textSize = 24f
         })
         col.addView(TextView(this).apply {
