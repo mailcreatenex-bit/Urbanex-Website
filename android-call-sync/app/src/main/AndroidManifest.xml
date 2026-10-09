@@ -7,7 +7,7 @@
     <application
         android:allowBackup="false"
         android:icon="@android:drawable/sym_call_incoming"
-        android:label="Urbanex Call Sync"
+        android:label="Urbanex Recorder"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false">
 

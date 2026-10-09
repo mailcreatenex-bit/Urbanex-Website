@@ -24,10 +24,9 @@ on the server as `CALL_WEBHOOK_SECRET` (Render > urbanex-api > Environment). Kee
 webhooks.
 
 ## 3. Get the app (no Android Studio needed)
-1. On GitHub open the repository > **Actions** > **Build the Call Sync app** > **Run workflow**.
-2. When the run turns green, open it and download **urbanex-call-sync-apk**. Unzip it to get `app-debug.apk`.
-3. Send that file to your phone (WhatsApp to yourself, a cable, or Drive) and open it. Android asks to allow installing from
-   that source: allow it. If Play Protect warns that the app is unknown, choose "Install anyway". It is your own build.
+1. On your phone open `https://github.com/mailcreatenex-bit/Urbanex-Website/releases/tag/latest-apk` (no GitHub login needed) and download **Urbanex-Recorder.apk**.
+2. Open the downloaded file. Android asks to allow installing from that source (your browser or file manager): allow it. If Play Protect warns that
+   the app is unknown, choose "Install anyway". It is your own build.
 
 ## 4. Set it up (once)
 1. **Server address:** `https://urbanex-realty.netlify.app`.
