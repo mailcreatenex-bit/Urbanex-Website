@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="navy">#0A1225</color>
+    <color name="navy_light">#1A253F</color>
+    <color name="gold">#C5A059</color>
+    <color name="ivory">#FDFBF7</color>
+    <color name="cream">#F4F1EA</color>
+
+    <string name="app_name">Urbanex Recorder</string>
+
+    <style name="Theme.UrbanexRecorder" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/navy</item>
+        <item name="colorOnPrimary">@color/ivory</item>
+        <item name="colorSecondary">@color/gold</item>
+        <item name="colorOnSecondary">@color/navy</item>
+        <item name="colorSecondaryContainer">#33C5A059</item>
+        <item name="android:windowBackground">@color/ivory</item>
+        <item name="android:statusBarColor">@color/navy</item>
+        <item name="android:navigationBarColor">@color/navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

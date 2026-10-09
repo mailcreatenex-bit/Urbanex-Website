@@ -25,7 +25,9 @@ export default function AuthCallback() {
         await refresh();
         // Strip fragment
         window.history.replaceState(null, "", window.location.pathname);
-        nav("/");
+        let back = "/";
+        try { if (sessionStorage.getItem("urbanex_app_login") === "1") back = "/app-login"; } catch { /* ignore */ }   // a sign-in started from the phone app returns there
+        nav(back);
       } catch (e) {
         setErr(e?.response?.data?.detail || "Sign-in failed");
       }

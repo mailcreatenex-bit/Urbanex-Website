@@ -8,6 +8,16 @@ Urbanex CRM, where the AI listens to it, adds the customer and what they want, a
 Phone's call recorder  ->  recordings folder  ->  Urbanex Call Sync  ->  your server  ->  AI  ->  CRM > Calls
 ```
 
+## What is in the app
+Three tabs at the bottom:
+* **CRM**: your real CRM (leads, inbox, plan, insights...) inside the app. Pull down to refresh.
+* **Website**: the website admin (properties, videos, owner listings, land reports, team...), also inside the app.
+* **Recorder**: the call-recording settings below.
+
+**Signing in:** press "Sign in with Google" in the app. It opens your phone's browser (Google does not allow sign-in inside an app), you sign in as
+an admin, and it brings you straight back to the app with the CRM open. No password or key is stored on the phone. The sign-in lasts 30 days.
+"Sign out of the CRM" is on the Recorder tab.
+
 ## 1. Turn on your phone's recorder
 Use the recorder that came with the phone. Names differ:
 * **Google Phone app:** Settings > Call recording > choose "Always record" for the numbers you want (it plays a notice to the caller).

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/tab_crm"
+        android:icon="@drawable/ic_people"
+        android:title="CRM" />
+    <item
+        android:id="@+id/tab_site"
+        android:icon="@drawable/ic_dashboard"
+        android:title="Website" />
+    <item
+        android:id="@+id/tab_recorder"
+        android:icon="@drawable/ic_mic"
+        android:title="Recorder" />
+</menu>

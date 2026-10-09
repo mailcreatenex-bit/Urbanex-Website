@@ -22,6 +22,11 @@ object Prefs {
         sp(c).edit().putInt("simSub", sub).putString("simIcc", icc).putString("simLabel", label).apply()
     }
 
+    fun loggedIn(c: Context): Boolean = sp(c).getBoolean("loggedIn", false)
+    fun setLoggedIn(c: Context, v: Boolean) {
+        sp(c).edit().putBoolean("loggedIn", v).apply()
+    }
+
     fun save(c: Context, url: String, key: String, folder: String, sinceMs: Long) {
         sp(c).edit()
             .putString("url", url.trim().trimEnd('/'))
